@@ -11,10 +11,10 @@ import { Button } from '@/components/ui/button';
 import { UserPlus } from 'lucide-react';
 import { StudentRegistrationForm } from './StudentRegistrationForm';
 
-interface Sport {
+interface Event {
   id: string;
   name: string;
-  type: 'game' | 'athletic';
+  category: 'on_stage' | 'off_stage';
   description: string;
   max_participants: number | null;
   registration_deadline: string | null;
@@ -23,15 +23,16 @@ interface Sport {
 }
 
 interface StudentRegistrationDialogProps {
-  sport: Sport;
+  event: Event;
   onRegistrationComplete?: () => void;
   trigger?: React.ReactNode;
   disabled?: boolean;
+  onCancel?: () => void;
 }
 
-export function StudentRegistrationDialog({ 
-  sport, 
-  onRegistrationComplete, 
+export function StudentRegistrationDialog({
+  event,
+  onRegistrationComplete,
   trigger,
   disabled = false
 }: StudentRegistrationDialogProps) {
@@ -47,8 +48,8 @@ export function StudentRegistrationDialog({
   };
 
   const defaultTrigger = (
-    <Button 
-      className="w-full" 
+    <Button
+      className="w-full"
       size="sm"
       disabled={disabled}
     >
@@ -64,16 +65,16 @@ export function StudentRegistrationDialog({
       </DialogTrigger>
       <DialogContent className="max-w-6xl w-[95vw] max-h-[95vh] overflow-hidden p-0">
         <DialogHeader className="sr-only">
-          <DialogTitle>Register Students for {sport.name}</DialogTitle>
+          <DialogTitle>Register Students for {event.name}</DialogTitle>
           <DialogDescription>
-            Select students from your year to register for this {sport.type === 'game' ? 'game' : 'athletic event'}
+            Select students from your year to register for this {event.category === 'on_stage' ? 'on-stage event' : 'off-stage event'}
           </DialogDescription>
         </DialogHeader>
         <div className="overflow-y-auto max-h-[95vh] p-6">
-          <StudentRegistrationForm 
-            sport={sport}
-            onSuccess={handleSuccess} 
-            onCancel={handleCancel} 
+          <StudentRegistrationForm
+            event={event}
+            onSuccess={handleSuccess}
+            onCancel={handleCancel}
           />
         </div>
       </DialogContent>

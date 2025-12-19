@@ -9,14 +9,14 @@ export interface StudentRegistrationInfo {
   currentCount: number;
   limit: number;
   registrations: Array<{
-    sport_name: string;
-    sport_type: 'game' | 'athletic';
+    event_name: string;
+    category: 'on_stage' | 'off_stage';
   }>;
 }
 
 export interface RegistrationLimits {
-  maxGameRegistrations: number;
-  maxAthleticRegistrations: number;
+  maxOnStageRegistrations: number;
+  maxOffStageRegistrations: number;
 }
 
 /**
@@ -26,7 +26,7 @@ export async function fetchRegistrationLimits(): Promise<RegistrationLimits> {
   const { data, error } = await supabase
     .from('settings')
     .select('key, value')
-    .in('key', ['max_game_registrations', 'max_athletic_registrations']);
+    .in('key', ['max_on_stage_registrations', 'max_off_stage_registrations']);
 
   if (error) throw error;
 
@@ -36,8 +36,8 @@ export async function fetchRegistrationLimits(): Promise<RegistrationLimits> {
   }, {} as Record<string, any>);
 
   return {
-    maxGameRegistrations: settingsMap.max_game_registrations?.limit || 0,
-    maxAthleticRegistrations: settingsMap.max_athletic_registrations?.limit || 0,
+    maxOnStageRegistrations: settingsMap.max_on_stage_registrations?.limit || 0,
+    maxOffStageRegistrations: settingsMap.max_off_stage_registrations?.limit || 0,
   };
 }
 
@@ -46,15 +46,15 @@ export async function fetchRegistrationLimits(): Promise<RegistrationLimits> {
  */
 export async function getStudentRegistrationInfo(
   studentIds: string[],
-  sportType: 'game' | 'athletic'
+  category: 'on_stage' | 'off_stage'
 ): Promise<StudentRegistrationInfo[]> {
   if (studentIds.length === 0) return [];
 
   // Fetch registration limits
   const limits = await fetchRegistrationLimits();
-  const limit = sportType === 'game' 
-    ? limits.maxGameRegistrations 
-    : limits.maxAthleticRegistrations;
+  const limit = category === 'on_stage'
+    ? limits.maxOnStageRegistrations
+    : limits.maxOffStageRegistrations;
 
   // Fetch students
   const { data: students, error: studentsError } = await supabase
@@ -69,9 +69,9 @@ export async function getStudentRegistrationInfo(
     .from('registrations')
     .select(`
       student_id,
-      sport:sports!inner(
+      event:events!inner(
         name,
-        type
+        category
       )
     `)
     .in('student_id', studentIds)
@@ -82,8 +82,8 @@ export async function getStudentRegistrationInfo(
   // Process the data
   const result: StudentRegistrationInfo[] = students.map(student => {
     const studentRegistrations = registrations.filter(reg => reg.student_id === student.id);
-    const relevantRegistrations = studentRegistrations.filter(reg => reg.sport.type === sportType);
-    
+    const relevantRegistrations = studentRegistrations.filter(reg => reg.event.category === category);
+
     return {
       id: student.id,
       name: student.name,
@@ -93,8 +93,8 @@ export async function getStudentRegistrationInfo(
       currentCount: relevantRegistrations.length,
       limit,
       registrations: relevantRegistrations.map(reg => ({
-        sport_name: reg.sport.name,
-        sport_type: reg.sport.type as 'game' | 'athletic'
+        event_name: reg.event.name,
+        category: reg.event.category as 'on_stage' | 'off_stage'
       }))
     };
   });
@@ -107,7 +107,7 @@ export async function getStudentRegistrationInfo(
  */
 export function checkRegistrationLimits(
   students: StudentRegistrationInfo[],
-  sportType: 'game' | 'athletic'
+  category: 'on_stage' | 'off_stage'
 ): {
   studentsAtLimit: StudentRegistrationInfo[];
   studentsOverLimit: StudentRegistrationInfo[];
@@ -115,7 +115,7 @@ export function checkRegistrationLimits(
 } {
   const studentsAtLimit = students.filter(s => s.currentCount >= s.limit);
   const studentsOverLimit = students.filter(s => s.currentCount > s.limit);
-  
+
   return {
     studentsAtLimit,
     studentsOverLimit,
@@ -128,7 +128,7 @@ export function checkRegistrationLimits(
  */
 export function getStudentsExceedingLimits(
   students: StudentRegistrationInfo[],
-  sportType: 'game' | 'athletic'
+  category: 'on_stage' | 'off_stage'
 ): StudentRegistrationInfo[] {
   return students.filter(s => s.currentCount >= s.limit);
 }

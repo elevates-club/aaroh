@@ -10,16 +10,18 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import { Download, FileText, Loader2, Users, Trophy } from 'lucide-react';
+import { Download, FileText, Loader2, Users, Palette } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRole } from '@/contexts/RoleContext';
 import { USER_ROLES, ACADEMIC_YEARS } from '@/lib/constants';
+import { hasRole, getCoordinatorYear } from '@/lib/roleUtils';
 import { toast } from '@/hooks/use-toast';
 import { 
   generateAdminAllRegistrationsPDF,
   generateAdminYearWiseRegistrationsPDF,
   generateCoordinatorRegistrationsPDF,
-  generateSportWiseRegistrationsPDF,
+  generateEventWiseRegistrationsPDF,
   type StudentRegistrationData
 } from '@/utils/pdfGeneratorV2';
 
@@ -30,6 +32,7 @@ interface PDFDownloadButtonProps {
 
 export function PDFDownloadButton({ variant = 'button', className }: PDFDownloadButtonProps) {
   const { profile } = useAuth();
+  const { activeRole } = useRole();
   const [loading, setLoading] = useState(false);
   const [selectedYear, setSelectedYear] = useState<string>('all');
 
@@ -46,7 +49,7 @@ export function PDFDownloadButton({ variant = 'button', className }: PDFDownload
           department,
           year
         ),
-        sport:sports!inner(
+        event:events!inner(
           name,
           type,
           venue,
@@ -55,8 +58,8 @@ export function PDFDownloadButton({ variant = 'button', className }: PDFDownload
       `);
 
     // Apply role-based filtering
-    if (profile?.role !== USER_ROLES.ADMIN) {
-      const coordinatorYear = profile?.role.replace('_coordinator', '').replace('_year', '') as 'first' | 'second' | 'third' | 'fourth';
+    if (!hasRole(activeRole, USER_ROLES.ADMIN)) {
+      const coordinatorYear = getCoordinatorYear(activeRole) as 'first' | 'second' | 'third' | 'fourth';
       query = query.eq('student.year', coordinatorYear);
     } else if (yearFilter && yearFilter !== 'all') {
       query = query.eq('student.year', yearFilter);
@@ -72,10 +75,10 @@ export function PDFDownloadButton({ variant = 'button', className }: PDFDownload
       roll_number: item.student.roll_number,
       department: item.student.department,
       year: item.student.year,
-      sport_name: item.sport.name,
-      sport_type: item.sport.type,
-      venue: item.sport.venue,
-      event_date: item.sport.event_date,
+      event_name: item.event.name,
+      event_type: item.event.type,
+      venue: item.event.venue,
+      event_date: item.event.event_date,
       registration_date: item.created_at,
       status: item.status,
     }));
@@ -159,7 +162,7 @@ export function PDFDownloadButton({ variant = 'button', className }: PDFDownload
         return;
       }
 
-      const coordinatorYear = profile?.role.replace('_coordinator', '').replace('_year', '') as string;
+      const coordinatorYear = getCoordinatorYear(activeRole) as string;
       await generateCoordinatorRegistrationsPDF(data, coordinatorYear);
       
       toast({
@@ -178,7 +181,7 @@ export function PDFDownloadButton({ variant = 'button', className }: PDFDownload
     }
   };
 
-  const handleDownloadSportWise = async () => {
+  const handleDownloadEventWise = async () => {
     try {
       setLoading(true);
       const data = await fetchRegistrationData(selectedYear !== 'all' ? selectedYear : undefined);
@@ -192,24 +195,24 @@ export function PDFDownloadButton({ variant = 'button', className }: PDFDownload
         return;
       }
 
-      // Group by sport
-      const registrationsBySport = data.reduce((acc, registration) => {
-        const sportName = registration.sport_name;
-        if (!acc[sportName]) {
-          acc[sportName] = [];
+      // Group by event
+      const registrationsByEvent = data.reduce((acc, registration) => {
+        const eventName = registration.event_name;
+        if (!acc[eventName]) {
+          acc[eventName] = [];
         }
-        acc[sportName].push(registration);
+        acc[eventName].push(registration);
         return acc;
       }, {} as Record<string, StudentRegistrationData[]>);
 
-      const title = selectedYear === 'all' ? 'Sport-wise Registrations' : `${selectedYear.charAt(0).toUpperCase() + selectedYear.slice(1)} Year Sport-wise Registrations`;
-      const filename = selectedYear === 'all' ? 'sport-wise-registrations' : `${selectedYear}-year-sport-wise`;
+      const title = selectedYear === 'all' ? 'Event-wise Registrations' : `${selectedYear.charAt(0).toUpperCase() + selectedYear.slice(1)} Year Event-wise Registrations`;
+      const filename = selectedYear === 'all' ? 'event-wise-registrations' : `${selectedYear}-year-event-wise`;
 
-      await generateSportWiseRegistrationsPDF(registrationsBySport, title, filename);
+      await generateEventWiseRegistrationsPDF(registrationsByEvent, title, filename);
       
       toast({
         title: 'Success',
-        description: `Downloaded sport-wise registrations as PDF`,
+        description: `Downloaded event-wise registrations as PDF`,
       });
     } catch (error) {
       console.error('Error downloading PDF:', error);
@@ -232,14 +235,14 @@ export function PDFDownloadButton({ variant = 'button', className }: PDFDownload
             Download Reports
           </CardTitle>
           <CardDescription>
-            {profile?.role === USER_ROLES.ADMIN 
+            {hasRole(activeRole, USER_ROLES.ADMIN) 
               ? 'Generate PDF reports for all registrations or filter by year'
               : 'Download your students\' registration details'
             }
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {profile?.role === USER_ROLES.ADMIN ? (
+          {hasRole(activeRole, USER_ROLES.ADMIN) ? (
             <>
               {/* Year filter for admin */}
               <div className="space-y-2">
@@ -273,7 +276,7 @@ export function PDFDownloadButton({ variant = 'button', className }: PDFDownload
                 </Button>
 
                 <Button
-                  onClick={handleDownloadSportWise}
+                  onClick={handleDownloadEventWise}
                   disabled={loading}
                   variant="outline"
                   className="w-full"
@@ -281,9 +284,9 @@ export function PDFDownloadButton({ variant = 'button', className }: PDFDownload
                   {loading ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
-                    <Trophy className="mr-2 h-4 w-4" />
+                    <Palette className="mr-2 h-4 w-4" />
                   )}
-                  Download Sport-wise Report
+                  Download Event-wise Report
                 </Button>
               </div>
             </>
@@ -323,7 +326,7 @@ export function PDFDownloadButton({ variant = 'button', className }: PDFDownload
           <DropdownMenuLabel>Download Options</DropdownMenuLabel>
           <DropdownMenuSeparator />
           
-          {profile?.role === USER_ROLES.ADMIN ? (
+          {hasRole(activeRole, USER_ROLES.ADMIN) ? (
             <>
               <DropdownMenuItem onClick={handleDownloadAll}>
                 <Users className="mr-2 h-4 w-4" />
@@ -346,9 +349,9 @@ export function PDFDownloadButton({ variant = 'button', className }: PDFDownload
                 Fourth Year Only
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleDownloadSportWise}>
-                <Trophy className="mr-2 h-4 w-4" />
-                Sport-wise Report
+              <DropdownMenuItem onClick={handleDownloadEventWise}>
+                <Palette className="mr-2 h-4 w-4" />
+                Event-wise Report
               </DropdownMenuItem>
             </>
           ) : (
@@ -365,7 +368,7 @@ export function PDFDownloadButton({ variant = 'button', className }: PDFDownload
   // Default button variant
   return (
     <Button
-      onClick={profile?.role === USER_ROLES.ADMIN ? handleDownloadAll : handleDownloadCoordinator}
+      onClick={hasRole(activeRole, USER_ROLES.ADMIN) ? handleDownloadAll : handleDownloadCoordinator}
       disabled={loading}
       className={className}
     >

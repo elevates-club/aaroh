@@ -8,8 +8,8 @@ export interface StudentRegistrationData {
   roll_number: string;
   department: string;
   year: string;
-  sport_name: string;
-  sport_type: 'game' | 'athletic';
+  event_name: string;
+  event_type: 'game' | 'athletic';
   venue?: string;
   event_date?: string;
   registration_date: string;
@@ -65,7 +65,7 @@ export class PDFGeneratorV2 {
     
     this.doc.setFontSize(8);
     this.doc.setTextColor(128, 128, 128);
-    this.doc.text('Sports Management System', 14, pageHeight - 10);
+    this.doc.text('Events Management System', 14, pageHeight - 10);
     this.doc.text(`Page ${this.doc.getCurrentPageInfo().pageNumber}`, pageWidth - 14, pageHeight - 10, { align: 'right' });
   }
 
@@ -76,8 +76,8 @@ export class PDFGeneratorV2 {
         <td style="border: 1px solid #ddd; padding: 8px; color: black;">${item.roll_number}</td>
         <td style="border: 1px solid #ddd; padding: 8px; color: black;">${item.department}</td>
         <td style="border: 1px solid #ddd; padding: 8px; color: black;">${item.year.charAt(0).toUpperCase() + item.year.slice(1)}</td>
-        <td style="border: 1px solid #ddd; padding: 8px; color: black;">${item.sport_name}</td>
-        <td style="border: 1px solid #ddd; padding: 8px; color: black;">${item.sport_type === 'game' ? 'Game' : 'Athletic'}</td>
+        <td style="border: 1px solid #ddd; padding: 8px; color: black;">${item.event_name}</td>
+        <td style="border: 1px solid #ddd; padding: 8px; color: black;">${item.event_type === 'game' ? 'Game' : 'Athletic'}</td>
       </tr>
     `).join('');
 
@@ -90,7 +90,7 @@ export class PDFGeneratorV2 {
               <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: white;">Roll Number</th>
               <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: white;">Department</th>
               <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: white;">Year</th>
-              <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: white;">Sport/Event</th>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: white;">Event/Event</th>
               <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: white;">Type</th>
             </tr>
           </thead>
@@ -119,8 +119,8 @@ export class PDFGeneratorV2 {
   private generateSummary(data: StudentRegistrationData[]) {
     const summary: Record<string, number | string> = {
       'Total Registrations': data.length,
-      'Games': data.filter(d => d.sport_type === 'game').length,
-      'Athletic Events': data.filter(d => d.sport_type === 'athletic').length,
+      'Games': data.filter(d => d.event_type === 'game').length,
+      'Athletic Events': data.filter(d => d.event_type === 'athletic').length,
       'Approved': data.filter(d => d.status === 'approved').length,
       'Pending': data.filter(d => d.status === 'pending').length,
     };
@@ -216,7 +216,7 @@ export class PDFGeneratorV2 {
     }
   }
 
-  public async generateSportWiseRegistrationsPDF(
+  public async generateEventWiseRegistrationsPDF(
     data: Record<string, StudentRegistrationData[]>,
     options: PDFOptions
   ): Promise<void> {
@@ -239,9 +239,9 @@ export class PDFGeneratorV2 {
         </div>
       ` : '';
 
-      // Create sport-wise content
-      let sportContent = '';
-      Object.entries(data).forEach(([sportName, registrations]) => {
+      // Create event-wise content
+      let eventContent = '';
+      Object.entries(data).forEach(([eventName, registrations]) => {
         const tableRows = registrations.map(item => `
           <tr style="color: black;">
             <td style="border: 1px solid #ddd; padding: 8px; color: black;">${item.student_name}</td>
@@ -251,9 +251,9 @@ export class PDFGeneratorV2 {
           </tr>
         `).join('');
 
-        sportContent += `
+        eventContent += `
           <div style="margin-bottom: 30px;">
-            <h3 style="color: #3b82f6; margin-bottom: 10px;">${sportName} (${registrations.length} students)</h3>
+            <h3 style="color: #3b82f6; margin-bottom: 10px;">${eventName} (${registrations.length} students)</h3>
             <table style="width: 100%; border-collapse: collapse; font-size: 12px; color: black;">
               <thead>
                 <tr style="background-color: #3b82f6; color: white;">
@@ -275,7 +275,7 @@ export class PDFGeneratorV2 {
       const htmlContent = `
         <div style="font-family: Arial, sans-serif; color: black; background-color: white;">
           ${headerHTML}
-          ${sportContent}
+          ${eventContent}
         </div>
       `;
 
@@ -333,7 +333,7 @@ export const generateAdminAllRegistrationsPDF = async (
   
   await generator.generateStudentRegistrationsPDF(registrations, {
     title: 'All Student Registrations',
-    subtitle: 'Complete list of all sports registrations',
+    subtitle: 'Complete list of all events registrations',
     filename: `all-registrations-${format(new Date(), 'yyyy-MM-dd')}.pdf`,
   });
 };
@@ -346,7 +346,7 @@ export const generateAdminYearWiseRegistrationsPDF = async (
   
   await generator.generateStudentRegistrationsPDF(registrations, {
     title: `${year.charAt(0).toUpperCase() + year.slice(1)} Year Student Registrations`,
-    subtitle: `Sports registrations for ${year} year students`,
+    subtitle: `Events registrations for ${year} year students`,
     filename: `${year}-year-registrations-${format(new Date(), 'yyyy-MM-dd')}.pdf`,
   });
 };
@@ -358,28 +358,28 @@ export const generateCoordinatorRegistrationsPDF = async (
   const generator = new PDFGeneratorV2();
   
   await generator.generateStudentRegistrationsPDF(registrations, {
-    title: `My Students' Sports Registrations`,
+    title: `My Students' Events Registrations`,
     subtitle: `${coordinatorYear.charAt(0).toUpperCase() + coordinatorYear.slice(1)} year coordinator report`,
     filename: `my-students-registrations-${format(new Date(), 'yyyy-MM-dd')}.pdf`,
   });
 };
 
-export const generateSportWiseRegistrationsPDF = async (
-  registrationsBySport: Record<string, StudentRegistrationData[]>,
+export const generateEventWiseRegistrationsPDF = async (
+  registrationsByEvent: Record<string, StudentRegistrationData[]>,
   title: string,
   filename: string
 ): Promise<void> => {
   const generator = new PDFGeneratorV2();
   
-  await generator.generateSportWiseRegistrationsPDF(registrationsBySport, {
+  await generator.generateEventWiseRegistrationsPDF(registrationsByEvent, {
     title,
-    subtitle: 'Registrations organized by sport/event',
+    subtitle: 'Registrations organized by event/event',
     filename: `${filename}-${format(new Date(), 'yyyy-MM-dd')}.pdf`,
   });
 };
 
-export const generateSportParticipantsPDF = async (
-  sport: { id: string; name: string; type: 'game' | 'athletic'; venue: string; event_date?: string | null },
+export const generateEventParticipantsPDF = async (
+  event: { id: string; name: string; type: 'game' | 'athletic'; venue: string; event_date?: string | null },
   userRole?: string
 ): Promise<void> => {
   const { supabase } = await import('@/integrations/supabase/client');
@@ -400,7 +400,7 @@ export const generateSportParticipantsPDF = async (
           year
         )
       `)
-      .eq('sport_id', sport.id)
+      .eq('event_id', event.id)
       .eq('status', 'approved'); // Only show approved registrations
 
     // If not admin, filter by coordinator's year
@@ -422,17 +422,17 @@ export const generateSportParticipantsPDF = async (
       roll_number: reg.student.roll_number,
       department: reg.student.department,
       year: reg.student.year,
-      sport_name: sport.name,
-      sport_type: sport.type,
-      venue: sport.venue,
-      event_date: sport.event_date || undefined,
+      event_name: event.name,
+      event_type: event.type,
+      venue: event.venue,
+      event_date: event.event_date || undefined,
       registration_date: reg.created_at,
       status: reg.status as 'pending' | 'approved' | 'rejected'
     }));
 
     const generator = new PDFGeneratorV2();
     
-    const title = `${sport.name} - Participants List`;
+    const title = `${event.name} - Participants List`;
     const subtitle = userRole === 'admin' 
       ? 'All registered participants' 
       : `${userRole?.replace('_coordinator', '').replace('_year', '')} year participants only`;
@@ -440,11 +440,11 @@ export const generateSportParticipantsPDF = async (
     await generator.generateStudentRegistrationsPDF(registrationData, {
       title,
       subtitle,
-      filename: `${sport.name.replace(/[^a-zA-Z0-9]/g, '-')}-participants-${format(new Date(), 'yyyy-MM-dd')}.pdf`,
+      filename: `${event.name.replace(/[^a-zA-Z0-9]/g, '-')}-participants-${format(new Date(), 'yyyy-MM-dd')}.pdf`,
     });
 
   } catch (error) {
-    console.error('Error generating sport participants PDF:', error);
+    console.error('Error generating event participants PDF:', error);
     throw error;
   }
 };

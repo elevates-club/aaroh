@@ -4,6 +4,9 @@ import { Sun, Moon, LogOut, User } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { getRoleLabel } from '@/lib/constants';
+import { hasRole, getCoordinatorYear } from '@/lib/roleUtils';
+import { RoleSwitcher } from '@/components/RoleSwitcher';
+import { useNavigate } from 'react-router-dom';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +19,7 @@ import {
 export function Header() {
   const { theme, toggleTheme } = useTheme();
   const { profile, signOut } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <header className="h-16 border-b bg-card/50 backdrop-blur-sm flex items-center justify-between px-4">
@@ -23,12 +27,14 @@ export function Header() {
         <SidebarTrigger />
         <div className="hidden md:block">
           <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Sports Management System
+            Events Management System
           </h1>
         </div>
       </div>
 
       <div className="flex items-center gap-2">
+        <RoleSwitcher />
+
         <Button
           variant="ghost"
           size="icon"
@@ -53,10 +59,18 @@ export function Header() {
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium">{profile?.full_name}</p>
                 <p className="text-xs text-muted-foreground">{profile?.email}</p>
-                <p className="text-xs text-primary">{getRoleLabel(profile?.role || '')}</p>
+                <p className="text-xs text-primary">
+                  {Array.isArray(profile?.role)
+                    ? profile.role.map(r => getRoleLabel(r)).join(', ')
+                    : getRoleLabel(profile?.role || '')}
+                </p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate('/profile')}>
+              <User className="mr-2 h-4 w-4" />
+              My Profile
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={signOut} className="text-destructive">
               <LogOut className="mr-2 h-4 w-4" />
               Sign Out

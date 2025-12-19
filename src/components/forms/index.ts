@@ -1,7 +1,7 @@
-export { CreateSportForm } from './CreateSportForm';
-export { CreateSportDialog } from './CreateSportDialog';
-export { EditSportForm } from './EditSportForm';
-export { EditSportDialog } from './EditSportDialog';
+export { CreateEventForm } from './CreateEventForm';
+export { CreateEventDialog } from './CreateEventDialog';
+export { EditEventForm } from './EditEventForm';
+export { EditEventDialog } from './EditEventDialog';
 export { StudentRegistrationForm } from './StudentRegistrationForm';
 export { StudentRegistrationDialog } from './StudentRegistrationDialog';
 export { AddStudentForm } from './AddStudentForm';

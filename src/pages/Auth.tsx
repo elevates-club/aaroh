@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trophy, Loader2 } from 'lucide-react';
+import { Palette, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { USER_ROLES, getRoleLabel } from '@/lib/constants';
 import { fetchSystemSettings } from '@/lib/settings';
@@ -53,6 +53,7 @@ export default function Auth() {
     e.preventDefault();
     setLoading(true);
 
+    // Pass raw input to signIn - it will handle roll number lookup
     const { error } = await signIn(formData.email, formData.password);
 
     if (error) {
@@ -104,9 +105,9 @@ export default function Auth() {
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center mb-4">
-            <Trophy className="h-10 w-10 text-primary-foreground" />
+            <Palette className="h-10 w-10 text-primary-foreground" />
           </div>
-          <CardTitle className="text-2xl">Sports Management System</CardTitle>
+          <CardTitle className="text-2xl">AAROH Arts Management</CardTitle>
           <CardDescription>Sign in to access your dashboard</CardDescription>
         </CardHeader>
         <CardContent>
@@ -115,19 +116,22 @@ export default function Auth() {
               <TabsTrigger value="signin">Sign In</TabsTrigger>
               {signUpEnabled && <TabsTrigger value="signup">Sign Up</TabsTrigger>}
             </TabsList>
-            
+
             <TabsContent value="signin">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Register Number or Email</Label>
                   <Input
                     id="email"
-                    type="email"
-                    placeholder="admin@sports.com"
+                    type="text"
+                    placeholder="e.g., 3529 or student@gmail.com"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Students: Use your register number. Coordinators: Use your email.
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
@@ -151,7 +155,7 @@ export default function Auth() {
                 </Button>
               </form>
             </TabsContent>
-            
+
             {signUpEnabled && (
               <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-4">
@@ -171,7 +175,7 @@ export default function Auth() {
                     <Input
                       id="signupEmail"
                       type="email"
-                      placeholder="coordinator@sports.com"
+                      placeholder="coordinator@events.com"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       required

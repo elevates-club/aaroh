@@ -5,26 +5,39 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Plus, 
-  Search, 
-  Users, 
-  GraduationCap, 
-  Building, 
+import {
+  Plus,
+  Search,
+  Users,
+  GraduationCap,
+  Building,
   Calendar,
   Edit,
   Trash2,
   Upload,
   Download,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Eye,
+  Palette,
+  Users2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { USER_ROLES, ACADEMIC_YEARS } from '@/lib/constants';
+import { useRole } from '@/contexts/RoleContext';
+import { USER_ROLES, ACADEMIC_YEARS, getYearLabel } from '@/lib/constants';
+import { hasRole, getCoordinatorYear } from '@/lib/roleUtils';
 import { AddStudentDialog, EditStudentDialog, CSVUploadDialog } from '@/components/forms';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface Student {
   id: string;
@@ -38,12 +51,20 @@ interface Student {
 
 export default function Students() {
   const { profile } = useAuth();
+  const { activeRole } = useRole();
   const [students, setStudents] = useState<Student[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [yearFilter, setYearFilter] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  
+  const [viewingStudent, setViewingStudent] = useState<Student | null>(null);
+  const [studentRegistrations, setStudentRegistrations] = useState<{
+    onStage: { id: string; name: string; status: string }[];
+    offStage: { id: string; name: string; status: string }[];
+    group: { id: string; name: string; status: string; mode: string }[];
+  }>({ onStage: [], offStage: [], group: [] });
+  const [loadingRegistrations, setLoadingRegistrations] = useState(false);
+
   useEffect(() => {
     if (profile) {
       fetchStudents();
@@ -59,14 +80,16 @@ export default function Students() {
       }
 
       let query = supabase.from('students').select('*').order('created_at', { ascending: false });
-      
-      if (profile?.role !== USER_ROLES.ADMIN) {
-        const year = profile?.role.replace('_coordinator', '').replace('_year', '') as 'first' | 'second' | 'third' | 'fourth';
-        query = query.eq('year', year);
+
+      if (!hasRole(activeRole, USER_ROLES.ADMIN)) {
+        const year = getCoordinatorYear(activeRole) as 'first' | 'second' | 'third' | 'fourth';
+        if (year) {
+          query = query.eq('year', year);
+        }
       }
-      
+
       const { data, error } = await query;
-      
+
       if (error) {
         console.error('Error fetching students:', error);
         toast({
@@ -76,7 +99,7 @@ export default function Students() {
         });
         return;
       }
-      
+
       setStudents(data || []);
     } catch (error) {
       console.error('Error fetching students:', error);
@@ -141,6 +164,55 @@ export default function Students() {
     }
   };
 
+  const fetchStudentRegistrations = async (student: Student) => {
+    setViewingStudent(student);
+    setLoadingRegistrations(true);
+
+    try {
+      const { data, error } = await supabase
+        .from('registrations')
+        .select(`
+          id,
+          status,
+          event:events!inner(
+            id,
+            name,
+            category,
+            mode
+          )
+        `)
+        .eq('student_id', student.id);
+
+      if (error) throw error;
+
+      const onStage: { id: string; name: string; status: string }[] = [];
+      const offStage: { id: string; name: string; status: string }[] = [];
+      const group: { id: string; name: string; status: string; mode: string }[] = [];
+
+      (data || []).forEach((reg: any) => {
+        const event = reg.event;
+        if (event.mode === 'group' || event.mode === 'team') {
+          group.push({ id: event.id, name: event.name, status: reg.status, mode: event.mode });
+        } else if (event.category === 'on_stage') {
+          onStage.push({ id: event.id, name: event.name, status: reg.status });
+        } else {
+          offStage.push({ id: event.id, name: event.name, status: reg.status });
+        }
+      });
+
+      setStudentRegistrations({ onStage, offStage, group });
+    } catch (error) {
+      console.error('Error fetching student registrations:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load student registrations',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingRegistrations(false);
+    }
+  };
+
   const downloadStudentsCSV = () => {
     const csvData = filteredStudents.map(student => [
       student.name,
@@ -171,11 +243,11 @@ export default function Students() {
 
   const filteredStudents = students.filter(student => {
     const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         student.roll_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         student.department.toLowerCase().includes(searchTerm.toLowerCase());
-    
+      student.roll_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.department.toLowerCase().includes(searchTerm.toLowerCase());
+
     const matchesYear = yearFilter === 'all' || student.year === yearFilter;
-    
+
     return matchesSearch && matchesYear;
   });
 
@@ -205,14 +277,14 @@ export default function Students() {
           <div className="min-w-0 flex-1">
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate">Students</h1>
             <p className="text-sm sm:text-base text-muted-foreground mt-1">
-              {profile?.role === USER_ROLES.ADMIN 
+              {hasRole(profile?.role, USER_ROLES.ADMIN)
                 ? 'Manage all students across all years'
-                : `View students from ${profile?.role.replace('_coordinator', '').replace('_year', '')} year`
+                : `View students from ${getCoordinatorYear(profile?.role)} year`
               }
             </p>
           </div>
-          
-          {profile?.role === USER_ROLES.ADMIN && (
+
+          {hasRole(profile?.role, USER_ROLES.ADMIN) && (
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <AddStudentDialog onStudentAdded={fetchStudents} />
               <CSVUploadDialog onStudentsAdded={fetchStudents} />
@@ -246,8 +318,8 @@ export default function Students() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          
-          {profile?.role === USER_ROLES.ADMIN && (
+
+          {hasRole(profile?.role, USER_ROLES.ADMIN) && (
             <Select value={yearFilter} onValueChange={setYearFilter}>
               <SelectTrigger className="w-full sm:w-[180px] h-10 sm:h-9">
                 <SelectValue placeholder="Filter by year" />
@@ -263,7 +335,7 @@ export default function Students() {
             </Select>
           )}
         </div>
-        
+
         {filteredStudents.length > 0 && (
           <div className="flex justify-end">
             <Button onClick={downloadStudentsCSV} variant="outline" size="sm" className="h-9">
@@ -292,7 +364,7 @@ export default function Students() {
               <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium mb-2">No students found</h3>
               <p className="text-muted-foreground text-sm">
-                {searchTerm || yearFilter !== 'all' 
+                {searchTerm || yearFilter !== 'all'
                   ? 'Try adjusting your search or filter criteria'
                   : 'No students have been added yet'
                 }
@@ -315,7 +387,7 @@ export default function Students() {
                             {ACADEMIC_YEARS[student.year]}
                           </Badge>
                         </div>
-                        
+
                         <div className="space-y-2">
                           <div className="flex items-center gap-2 text-sm">
                             <Building className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -326,27 +398,37 @@ export default function Students() {
                             <span>{format(new Date(student.created_at), 'MMM dd, yyyy')}</span>
                           </div>
                         </div>
-                        
-                        {profile?.role === USER_ROLES.ADMIN && (
-                          <div className="flex items-center justify-end gap-2 pt-2 border-t">
-                            <EditStudentDialog
-                              student={student}
-                              onStudentUpdated={fetchStudents}
-                            />
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteStudent(student.id, student.name)}
-                              disabled={deletingId === student.id}
-                            >
-                              {deletingId === student.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-                        )}
+
+                        <div className="flex items-center justify-end gap-2 pt-2 border-t">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => fetchStudentRegistrations(student)}
+                            title="View registrations"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          {hasRole(profile?.role, USER_ROLES.ADMIN) && (
+                            <>
+                              <EditStudentDialog
+                                student={student}
+                                onStudentUpdated={fetchStudents}
+                              />
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteStudent(student.id, student.name)}
+                                disabled={deletingId === student.id}
+                              >
+                                {deletingId === student.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </Card>
                   ))}
@@ -364,9 +446,7 @@ export default function Students() {
                         <TableHead>Department</TableHead>
                         <TableHead>Year</TableHead>
                         <TableHead>Created</TableHead>
-                        {profile?.role === USER_ROLES.ADMIN && (
-                          <TableHead className="text-right">Actions</TableHead>
-                        )}
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -391,28 +471,38 @@ export default function Students() {
                               {format(new Date(student.created_at), 'MMM dd, yyyy')}
                             </div>
                           </TableCell>
-                          {profile?.role === USER_ROLES.ADMIN && (
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <EditStudentDialog
-                                  student={student}
-                                  onStudentUpdated={fetchStudents}
-                                />
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleDeleteStudent(student.id, student.name)}
-                                  disabled={deletingId === student.id}
-                                >
-                                  {deletingId === student.id ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <Trash2 className="h-4 w-4" />
-                                  )}
-                                </Button>
-                              </div>
-                            </TableCell>
-                          )}
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => fetchStudentRegistrations(student)}
+                                title="View registrations"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              {hasRole(profile?.role, USER_ROLES.ADMIN) && (
+                                <>
+                                  <EditStudentDialog
+                                    student={student}
+                                    onStudentUpdated={fetchStudents}
+                                  />
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleDeleteStudent(student.id, student.name)}
+                                    disabled={deletingId === student.id}
+                                  >
+                                    {deletingId === student.id ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -423,6 +513,109 @@ export default function Students() {
           )}
         </CardContent>
       </Card>
+
+      {/* Student Registrations Dialog */}
+      <Dialog open={!!viewingStudent} onOpenChange={(open) => !open && setViewingStudent(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              {viewingStudent?.name}
+            </DialogTitle>
+            <DialogDescription>
+              {viewingStudent?.roll_number} • {viewingStudent?.department}
+            </DialogDescription>
+          </DialogHeader>
+
+          {loadingRegistrations ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          ) : (
+            <ScrollArea className="max-h-[400px]">
+              <div className="space-y-4">
+                {/* On-Stage Events */}
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold flex items-center gap-2">
+                    <Palette className="h-4 w-4 text-purple-500" />
+                    On-Stage Events ({studentRegistrations.onStage.length})
+                  </h4>
+                  {studentRegistrations.onStage.length === 0 ? (
+                    <p className="text-sm text-muted-foreground pl-6">No on-stage registrations</p>
+                  ) : (
+                    <div className="space-y-1 pl-6">
+                      {studentRegistrations.onStage.map((event) => (
+                        <div key={event.id} className="flex items-center justify-between text-sm p-2 bg-muted rounded">
+                          <span>{event.name}</span>
+                          <Badge variant={event.status === 'approved' ? 'default' : event.status === 'pending' ? 'secondary' : 'destructive'}>
+                            {event.status}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Off-Stage Events */}
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4 text-green-500" />
+                    Off-Stage Events ({studentRegistrations.offStage.length})
+                  </h4>
+                  {studentRegistrations.offStage.length === 0 ? (
+                    <p className="text-sm text-muted-foreground pl-6">No off-stage registrations</p>
+                  ) : (
+                    <div className="space-y-1 pl-6">
+                      {studentRegistrations.offStage.map((event) => (
+                        <div key={event.id} className="flex items-center justify-between text-sm p-2 bg-muted rounded">
+                          <span>{event.name}</span>
+                          <Badge variant={event.status === 'approved' ? 'default' : event.status === 'pending' ? 'secondary' : 'destructive'}>
+                            {event.status}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Group Events */}
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold flex items-center gap-2">
+                    <Users2 className="h-4 w-4 text-blue-500" />
+                    Group Events ({studentRegistrations.group.length})
+                  </h4>
+                  {studentRegistrations.group.length === 0 ? (
+                    <p className="text-sm text-muted-foreground pl-6">No group registrations</p>
+                  ) : (
+                    <div className="space-y-1 pl-6">
+                      {studentRegistrations.group.map((event) => (
+                        <div key={event.id} className="flex items-center justify-between text-sm p-2 bg-muted rounded">
+                          <div>
+                            <span>{event.name}</span>
+                            <Badge variant="outline" className="ml-2 text-xs">{event.mode}</Badge>
+                          </div>
+                          <Badge variant={event.status === 'approved' ? 'default' : event.status === 'pending' ? 'secondary' : 'destructive'}>
+                            {event.status}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {studentRegistrations.onStage.length === 0 &&
+                  studentRegistrations.offStage.length === 0 &&
+                  studentRegistrations.group.length === 0 && (
+                    <div className="text-center py-4 text-muted-foreground">
+                      <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>No registrations found for this student</p>
+                    </div>
+                  )}
+              </div>
+            </ScrollArea>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

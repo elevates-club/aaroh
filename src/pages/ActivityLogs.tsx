@@ -7,7 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Activity, Search, User, Clock, FileText, Globe, Monitor, Smartphone, Tablet, MapPin, ChevronLeft, ChevronRight, Filter, Download, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRole } from '@/contexts/RoleContext';
 import { USER_ROLES } from '@/lib/constants';
+import { hasRole, getCoordinatorYear } from '@/lib/roleUtils';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
@@ -33,6 +35,7 @@ interface ActivityLog {
 
 export default function ActivityLogs() {
   const { profile } = useAuth();
+  const { activeRole } = useRole();
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -55,7 +58,7 @@ export default function ActivityLogs() {
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      
+
       // Don't fetch if profile is not loaded yet
       if (!profile) {
         setLoading(false);
@@ -80,7 +83,8 @@ export default function ActivityLogs() {
         `, { count: 'exact' });
 
       // Role-based filtering - coordinators only see their own logs
-      if (profile.role !== USER_ROLES.ADMIN && profile.id) {
+      // Role-based filtering - coordinators only see their own logs
+      if (profile.role && !profile.role.includes(USER_ROLES.ADMIN) && profile.id) {
         query = query.eq('user_id', profile.id);
       }
 
@@ -97,9 +101,9 @@ export default function ActivityLogs() {
       const { data, error, count } = await query
         .order('created_at', { ascending: false })
         .range(offset, offset + logsPerPage - 1);
-      
+
       if (error) throw error;
-      
+
       setLogs(data || []);
       setTotalLogs(count || 0);
       setTotalPages(Math.ceil((count || 0) / logsPerPage));
@@ -144,7 +148,7 @@ export default function ActivityLogs() {
   };
 
   const getActionIcon = (action: string) => {
-    if (action.includes('sport')) return <FileText className="h-4 w-4" />;
+    if (action.includes('event')) return <FileText className="h-4 w-4" />;
     if (action.includes('registration')) return <User className="h-4 w-4" />;
     if (action.includes('login')) return <User className="h-4 w-4" />;
     if (action.includes('logout')) return <User className="h-4 w-4" />;
@@ -166,14 +170,14 @@ export default function ActivityLogs() {
 
   const formatActionDescription = (log: ActivityLog) => {
     const { action, details } = log;
-    
+
     switch (action) {
-      case 'sport_created':
-        return `Created ${details?.sport_type || 'sport'} event: ${details?.sport_name || 'Unknown'}`;
-      case 'sport_updated':
-        return `Updated sport event: ${details?.sport_name || 'Unknown'}`;
-      case 'sport_deleted':
-        return `Deleted sport event: ${details?.sport_name || 'Unknown'}`;
+      case 'event_created':
+        return `Created ${details?.event_type || 'event'} event: ${details?.event_name || 'Unknown'}`;
+      case 'event_updated':
+        return `Updated event event: ${details?.event_name || 'Unknown'}`;
+      case 'event_deleted':
+        return `Deleted event event: ${details?.event_name || 'Unknown'}`;
       case 'student_created':
         return `Added new student: ${details?.student_name || 'Unknown'}`;
       case 'student_updated':
@@ -181,7 +185,7 @@ export default function ActivityLogs() {
       case 'student_deleted':
         return `Deleted student: ${details?.student_name || 'Unknown'}`;
       case 'registration_created':
-        return `Student registered for sports event`;
+        return `Student registered for events event`;
       case 'registration_updated':
         return `Registration updated`;
       case 'registration_deleted':
@@ -218,10 +222,10 @@ export default function ActivityLogs() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="min-w-0 flex-1">
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2">
-                  {profile?.role === USER_ROLES.ADMIN ? 'Activity Logs' : 'My Activity'}
+                  {hasRole(activeRole, USER_ROLES.ADMIN) ? 'Activity Logs' : 'My Activity'}
                 </h1>
                 <p className="text-white/90 text-sm sm:text-base">
-                  {profile?.role === USER_ROLES.ADMIN 
+                  {hasRole(activeRole, USER_ROLES.ADMIN)
                     ? 'View all system activities and user actions with login details'
                     : 'View your activity history and login information'
                   }
@@ -256,9 +260,9 @@ export default function ActivityLogs() {
                     <SelectItem value="student_created">Student Created</SelectItem>
                     <SelectItem value="student_updated">Student Updated</SelectItem>
                     <SelectItem value="student_deleted">Student Deleted</SelectItem>
-                    <SelectItem value="sport_created">Sport Created</SelectItem>
-                    <SelectItem value="sport_updated">Sport Updated</SelectItem>
-                    <SelectItem value="sport_deleted">Sport Deleted</SelectItem>
+                    <SelectItem value="event_created">Event Created</SelectItem>
+                    <SelectItem value="event_updated">Event Updated</SelectItem>
+                    <SelectItem value="event_deleted">Event Deleted</SelectItem>
                     <SelectItem value="registration_created">Registration Created</SelectItem>
                     <SelectItem value="registration_updated">Registration Updated</SelectItem>
                     <SelectItem value="registration_deleted">Registration Deleted</SelectItem>
@@ -276,7 +280,7 @@ export default function ActivityLogs() {
                   Refresh
                 </Button>
               </div>
-              
+
               {/* Stats */}
               <div className="flex flex-col sm:flex-row gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
@@ -318,7 +322,7 @@ export default function ActivityLogs() {
                 <div>
                   <h3 className="text-lg font-semibold">No Activity Found</h3>
                   <p className="text-muted-foreground">
-                    {searchTerm || actionFilter !== 'all' 
+                    {searchTerm || actionFilter !== 'all'
                       ? 'Try adjusting your search or filter criteria.'
                       : 'No activity logs available yet.'
                     }
@@ -350,14 +354,16 @@ export default function ActivityLogs() {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="space-y-2">
                         {log.user && (
                           <div className="flex items-center gap-2 text-sm">
                             <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                             <span className="truncate font-medium">{log.user.full_name}</span>
                             <Badge variant="outline" className="text-xs">
-                              {log.user.role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                              {Array.isArray(log.user.role)
+                                ? log.user.role.map(r => r.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())).join(', ')
+                                : log.user.role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                             </Badge>
                           </div>
                         )}
@@ -383,7 +389,7 @@ export default function ActivityLogs() {
                           </div>
                         )}
                       </div>
-                      
+
                       {log.details && Object.keys(log.details).length > 0 && (
                         <div className="text-xs text-muted-foreground">
                           <details className="cursor-pointer">
@@ -405,7 +411,7 @@ export default function ActivityLogs() {
                           {getActionIcon(log.action)}
                         </div>
                       </div>
-                      
+
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-2">
                           <p className="text-base font-medium text-gray-900 dark:text-gray-100">
@@ -415,15 +421,17 @@ export default function ActivityLogs() {
                             {log.action.replace(/_/g, ' ')}
                           </Badge>
                         </div>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-sm text-muted-foreground">
                           {log.user && (
                             <div className="flex items-center gap-2">
                               <User className="h-4 w-4 flex-shrink-0" />
                               <span className="truncate font-medium">{log.user.full_name}</span>
-                              <Badge variant="outline" className="text-xs">
-                                {log.user.role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                              </Badge>
+                              <p className="text-sm font-medium">
+                                {Array.isArray(log.user.role)
+                                  ? log.user.role.map(r => r.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())).join(', ')
+                                  : log.user.role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                              </p>
                             </div>
                           )}
                           <div className="flex items-center gap-2">
@@ -443,7 +451,7 @@ export default function ActivityLogs() {
                             </div>
                           )}
                         </div>
-                        
+
                         {/* Additional Details Row */}
                         {(log.details && (log.details.session_id || log.details.login_method)) && (
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs text-muted-foreground mt-2 pt-2 border-t">
@@ -464,7 +472,7 @@ export default function ActivityLogs() {
                             )}
                           </div>
                         )}
-                        
+
                         {log.details && Object.keys(log.details).length > 0 && (
                           <div className="mt-3 text-xs text-muted-foreground">
                             <details className="cursor-pointer">
@@ -492,7 +500,7 @@ export default function ActivityLogs() {
                 <div className="text-sm text-muted-foreground">
                   Page {currentPage} of {totalPages} ({totalLogs} total logs)
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
@@ -504,7 +512,7 @@ export default function ActivityLogs() {
                     <ChevronLeft className="h-4 w-4 mr-1" />
                     Previous
                   </Button>
-                  
+
                   {/* Page Numbers */}
                   <div className="flex items-center gap-1">
                     {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -518,7 +526,7 @@ export default function ActivityLogs() {
                       } else {
                         pageNum = currentPage - 2 + i;
                       }
-                      
+
                       return (
                         <Button
                           key={pageNum}
@@ -533,7 +541,7 @@ export default function ActivityLogs() {
                       );
                     })}
                   </div>
-                  
+
                   <Button
                     variant="outline"
                     size="sm"

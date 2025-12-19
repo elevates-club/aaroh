@@ -3,22 +3,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { Users, Trophy, Edit, Trash2, Loader2, UserPlus, Eye, X, Calendar, Building } from 'lucide-react';
+import { Users, Palette, Edit, Trash2, Loader2, UserPlus, Eye, X, Calendar, Building } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRole } from '@/contexts/RoleContext';
 import { USER_ROLES } from '@/lib/constants';
+import { hasRole, getCoordinatorYear } from '@/lib/roleUtils';
 import { StudentRegistrationDialog } from '@/components/forms/StudentRegistrationDialog';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
 interface RegistrationStatsProps {
-  sportId: string;
+  eventId: string;
   maxParticipants?: number | null;
   className?: string;
-  sport?: {
+  event?: {
     id: string;
     name: string;
-    type: 'game' | 'athletic';
+    category: 'on_stage' | 'off_stage';
     registration_deadline: string | null;
   };
   onRegistrationUpdate?: () => void;
@@ -43,8 +45,9 @@ interface StudentRegistration {
   created_at: string;
 }
 
-export function RegistrationStats({ sportId, maxParticipants, className, sport, onRegistrationUpdate }: RegistrationStatsProps) {
+export function RegistrationStats({ eventId, maxParticipants, className, event, onRegistrationUpdate }: RegistrationStatsProps) {
   const { profile } = useAuth();
+  const { activeRole } = useRole();
   const [stats, setStats] = useState<RegistrationData>({
     totalRegistrations: 0,
     pendingRegistrations: 0,
@@ -60,12 +63,12 @@ export function RegistrationStats({ sportId, maxParticipants, className, sport, 
 
   useEffect(() => {
     fetchRegistrationStats();
-  }, [sportId, profile]);
+  }, [eventId, profile]);
 
   const fetchRegistrationStats = async () => {
     try {
       setLoading(true);
-      
+
       // Enhanced query to get detailed registration data
       let query = supabase
         .from('registrations')
@@ -82,13 +85,15 @@ export function RegistrationStats({ sportId, maxParticipants, className, sport, 
             year
           )
         `)
-        .eq('sport_id', sportId)
+        .eq('event_id', eventId)
         .order('created_at', { ascending: false });
 
       // Filter by coordinator's year if not admin
-      if (profile?.role !== USER_ROLES.ADMIN) {
-        const year = profile?.role.replace('_coordinator', '').replace('_year', '') as 'first' | 'second' | 'third' | 'fourth';
-        query = query.eq('student.year', year);
+      if (!hasRole(activeRole, USER_ROLES.ADMIN)) {
+        const year = getCoordinatorYear(activeRole);
+        if (year) {
+          query = query.eq('student.year', year);
+        }
       }
 
       const { data, error } = await query;
@@ -97,9 +102,9 @@ export function RegistrationStats({ sportId, maxParticipants, className, sport, 
       // Process the data
       const registrationData = data || [];
       const yearBreakdown: Record<string, number> = {};
-      
+
       let pending = 0, approved = 0, rejected = 0;
-      
+
       // Transform data for detailed view
       const transformedRegistrations: StudentRegistration[] = registrationData.map(reg => ({
         id: reg.id,
@@ -125,9 +130,9 @@ export function RegistrationStats({ sportId, maxParticipants, className, sport, 
             rejected++;
             break;
         }
-        
+
         // Count by year (only for admin view)
-        if (profile?.role === USER_ROLES.ADMIN && reg.student?.year) {
+        if (hasRole(activeRole, USER_ROLES.ADMIN) && reg.student?.year) {
           const year = reg.student.year;
           yearBreakdown[year] = (yearBreakdown[year] || 0) + 1;
         }
@@ -247,17 +252,6 @@ export function RegistrationStats({ sportId, maxParticipants, className, sport, 
               </CardDescription>
             </div>
             <div className="flex items-center gap-1">
-              {profile?.role !== USER_ROLES.ADMIN && sport && isRegistrationOpen(sport.registration_deadline) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowAddDialog(true)}
-                  className="h-8 w-8 p-0"
-                  title="Add student"
-                >
-                  <UserPlus className="h-4 w-4" />
-                </Button>
-              )}
               {registrations.length > 0 && (
                 <Button
                   variant="ghost"
@@ -296,8 +290,8 @@ export function RegistrationStats({ sportId, maxParticipants, className, sport, 
                 <span className="font-medium">Event Capacity</span>
                 <span className="font-bold text-primary">{stats.approvedRegistrations}/{maxParticipants}</span>
               </div>
-              <Progress 
-                value={occupancyPercentage} 
+              <Progress
+                value={occupancyPercentage}
                 className="h-2"
               />
               <div className="text-xs text-muted-foreground text-center">
@@ -307,7 +301,7 @@ export function RegistrationStats({ sportId, maxParticipants, className, sport, 
           )}
 
           {/* Year Breakdown (Admin only) */}
-          {profile?.role === USER_ROLES.ADMIN && Object.keys(stats.yearBreakdown).length > 0 && (
+          {hasRole(activeRole, USER_ROLES.ADMIN) && Object.keys(stats.yearBreakdown).length > 0 && (
             <div className="space-y-2">
               <div className="text-sm font-medium text-muted-foreground">Year Breakdown</div>
               <div className="flex flex-wrap gap-2">
@@ -329,9 +323,9 @@ export function RegistrationStats({ sportId, maxParticipants, className, sport, 
         </CardContent>
 
         {/* Add Student Dialog */}
-        {showAddDialog && sport && (
+        {showAddDialog && event && (
           <StudentRegistrationDialog
-            sport={sport}
+            event={event}
             onRegistrationComplete={handleRegistrationComplete}
             onCancel={() => setShowAddDialog(false)}
           />
@@ -373,7 +367,7 @@ export function RegistrationStats({ sportId, maxParticipants, className, sport, 
                             {registration.status}
                           </Badge>
                         </div>
-                        
+
                         <div className="space-y-2 text-xs">
                           <div className="flex items-center gap-2 text-muted-foreground">
                             <Building className="h-3 w-3 flex-shrink-0" />

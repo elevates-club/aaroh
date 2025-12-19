@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, User, Trophy, X } from 'lucide-react';
+import { AlertTriangle, User, Palette, X } from 'lucide-react';
 
 interface StudentLimitInfo {
   id: string;
@@ -21,8 +21,8 @@ interface StudentLimitInfo {
   currentCount: number;
   limit: number;
   registrations: Array<{
-    sport_name: string;
-    sport_type: 'game' | 'athletic';
+    event_name: string;
+    category: 'on_stage' | 'off_stage';
   }>;
 }
 
@@ -30,8 +30,8 @@ interface RegistrationWarningDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   students: StudentLimitInfo[];
-  sportType: 'game' | 'athletic';
-  sportName: string;
+  category: 'on_stage' | 'off_stage';
+  eventName: string;
   onConfirm: () => void;
   onCancel: () => void;
   userRole: 'coordinator' | 'admin';
@@ -41,8 +41,8 @@ export function RegistrationWarningDialog({
   open,
   onOpenChange,
   students,
-  sportType,
-  sportName,
+  category,
+  eventName,
   onConfirm,
   onCancel,
   userRole
@@ -102,13 +102,13 @@ export function RegistrationWarningDialog({
         </DialogHeader>
 
         <div className="space-y-4 max-h-96 overflow-y-auto">
-          {/* Sport Info */}
+          {/* Event Info */}
           <div className="p-4 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-lg border">
             <div className="flex items-center gap-2 mb-2">
-              <Trophy className="h-5 w-5 text-primary" />
-              <span className="font-medium">{sportName}</span>
+              <Palette className="h-5 w-5 text-primary" />
+              <span className="font-medium">{eventName}</span>
               <Badge variant="outline" className="ml-auto">
-                {sportType === 'game' ? 'Team Sport' : 'Athletic Event'}
+                {category === 'on_stage' ? 'Team Event' : 'Athletic Event'}
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground">
@@ -147,7 +147,7 @@ export function RegistrationWarningDialog({
                         variant={userRole === 'admin' ? 'destructive' : 'secondary'}
                         className="text-xs"
                       >
-                        {student.currentCount}/{student.limit} {sportType === 'game' ? 'Games' : 'Athletics'}
+                        {student.currentCount}/{student.limit} {category === 'on_stage' ? 'Games' : 'Athletics'}
                       </Badge>
                     </div>
                   </div>
@@ -155,12 +155,12 @@ export function RegistrationWarningDialog({
 
                 {/* Current Registrations */}
                 <div className="mt-3 pt-3 border-t">
-                  <p className="text-sm font-medium mb-2">Current {sportType === 'game' ? 'Game' : 'Athletic'} Registrations:</p>
+                  <p className="text-sm font-medium mb-2">Current {category === 'on_stage' ? 'Game' : 'Athletic'} Registrations:</p>
                   <div className="flex flex-wrap gap-2">
                     {student.registrations.length > 0 ? (
                       student.registrations.map((reg, index) => (
                         <Badge key={index} variant="outline" className="text-xs">
-                          {reg.sport_name}
+                          {reg.event_name}
                         </Badge>
                       ))
                     ) : (

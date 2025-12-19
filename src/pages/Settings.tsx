@@ -5,24 +5,27 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { Settings as SettingsIcon, Save, Users, Trophy, Loader2 } from 'lucide-react';
+import { Settings as SettingsIcon, Save, Users, Palette, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRole } from '@/contexts/RoleContext';
 import { USER_ROLES } from '@/lib/constants';
+import { hasRole, getCoordinatorYear } from '@/lib/roleUtils';
 import { toast } from '@/hooks/use-toast';
 
 interface SettingsData {
-  maxGameRegistrations: number;
-  maxAthleticRegistrations: number;
+  maxOnStageRegistrations: number;
+  maxOffStageRegistrations: number;
   autoApproveRegistrations: boolean;
   signUpEnabled: boolean;
 }
 
 export default function Settings() {
   const { profile } = useAuth();
+  const { activeRole } = useRole();
   const [settings, setSettings] = useState<SettingsData>({
-    maxGameRegistrations: 2,
-    maxAthleticRegistrations: 2,
+    maxOnStageRegistrations: 2,
+    maxOffStageRegistrations: 2,
     autoApproveRegistrations: false,
     signUpEnabled: true,
   });
@@ -31,12 +34,12 @@ export default function Settings() {
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalStudents: 0,
-    totalSports: 0,
+    totalEvents: 0,
     totalRegistrations: 0,
   });
 
   useEffect(() => {
-    if (profile?.role === USER_ROLES.ADMIN) {
+    if (hasRole(activeRole, USER_ROLES.ADMIN)) {
       fetchSettings();
       fetchStats();
     }
@@ -48,7 +51,7 @@ export default function Settings() {
       const { data, error } = await supabase
         .from('settings')
         .select('key, value')
-        .in('key', ['max_game_registrations', 'max_athletic_registrations', 'auto_approve_registrations', 'sign_up_enabled']);
+        .in('key', ['max_on_stage_registrations', 'max_off_stage_registrations', 'auto_approve_registrations', 'sign_up_enabled']);
 
       if (error) throw error;
 
@@ -58,8 +61,8 @@ export default function Settings() {
       }, {} as Record<string, any>);
 
       setSettings({
-        maxGameRegistrations: settingsMap.max_game_registrations?.limit || 2,
-        maxAthleticRegistrations: settingsMap.max_athletic_registrations?.limit || 2,
+        maxOnStageRegistrations: settingsMap.max_on_stage_registrations?.limit || 2,
+        maxOffStageRegistrations: settingsMap.max_off_stage_registrations?.limit || 2,
         autoApproveRegistrations: settingsMap.auto_approve_registrations?.enabled || false,
         signUpEnabled: settingsMap.sign_up_enabled?.enabled !== false, // Default to true if not set
       });
@@ -77,17 +80,17 @@ export default function Settings() {
 
   const fetchStats = async () => {
     try {
-      const [usersResult, studentsResult, sportsResult, registrationsResult] = await Promise.all([
+      const [usersResult, studentsResult, eventsResult, registrationsResult] = await Promise.all([
         supabase.from('profiles').select('id', { count: 'exact' }),
         supabase.from('students').select('id', { count: 'exact' }),
-        supabase.from('sports').select('id', { count: 'exact' }).eq('is_active', true),
+        supabase.from('events').select('id', { count: 'exact' }).eq('is_active', true),
         supabase.from('registrations').select('id', { count: 'exact' }),
       ]);
 
       setStats({
         totalUsers: usersResult.count || 0,
         totalStudents: studentsResult.count || 0,
-        totalSports: sportsResult.count || 0,
+        totalEvents: eventsResult.count || 0,
         totalRegistrations: registrationsResult.count || 0,
       });
     } catch (error) {
@@ -101,13 +104,13 @@ export default function Settings() {
       
       const updates = [
         {
-          key: 'max_game_registrations',
-          value: { limit: settings.maxGameRegistrations },
+          key: 'max_on_stage_registrations',
+          value: { limit: settings.maxOnStageRegistrations },
           updated_by: profile?.id,
         },
         {
-          key: 'max_athletic_registrations',
-          value: { limit: settings.maxAthleticRegistrations },
+          key: 'max_off_stage_registrations',
+          value: { limit: settings.maxOffStageRegistrations },
           updated_by: profile?.id,
         },
         {
@@ -135,8 +138,8 @@ export default function Settings() {
         user_id: profile?.id,
         action: 'settings_updated',
         details: {
-          max_game_registrations: settings.maxGameRegistrations,
-          max_athletic_registrations: settings.maxAthleticRegistrations,
+          max_on_stage_registrations: settings.maxOnStageRegistrations,
+          max_off_stage_registrations: settings.maxOffStageRegistrations,
           auto_approve_registrations: settings.autoApproveRegistrations,
           sign_up_enabled: settings.signUpEnabled,
         },
@@ -159,7 +162,7 @@ export default function Settings() {
   };
 
   // Only admins can access settings
-  if (profile?.role !== USER_ROLES.ADMIN) {
+  if (!hasRole(activeRole, USER_ROLES.ADMIN)) {
     return (
       <div className="p-6">
         <Card className="p-8">
@@ -212,11 +215,11 @@ export default function Settings() {
 
         <Card className="border-l-4 border-l-accent">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Sports</CardTitle>
-            <Trophy className="h-4 w-4 text-accent" />
+            <CardTitle className="text-sm font-medium">Active Events</CardTitle>
+            <Palette className="h-4 w-4 text-accent" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalSports}</div>
+            <div className="text-2xl font-bold">{stats.totalEvents}</div>
             <p className="text-xs text-muted-foreground">Events available</p>
           </CardContent>
         </Card>
@@ -260,44 +263,44 @@ export default function Settings() {
             <>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="maxGameRegistrations">
-                    Maximum Game Registrations per Student
+                  <Label htmlFor="maxOnStageRegistrations">
+                    Maximum On-Stage Registrations per Student
                   </Label>
                   <Input
-                    id="maxGameRegistrations"
+                    id="maxOnStageRegistrations"
                     type="number"
                     min="1"
                     max="10"
-                    value={settings.maxGameRegistrations}
+                    value={settings.maxOnStageRegistrations}
                     onChange={(e) => setSettings(prev => ({
                       ...prev,
-                      maxGameRegistrations: parseInt(e.target.value) || 1
+                      maxOnStageRegistrations: parseInt(e.target.value) || 1
                     }))}
                     disabled={saving}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Students can register for up to this many team sports/games
+                    Students can register for up to this many on-stage events
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="maxAthleticRegistrations">
-                    Maximum Athletic Registrations per Student
+                  <Label htmlFor="maxOffStageRegistrations">
+                    Maximum Off-Stage Registrations per Student
                   </Label>
                   <Input
-                    id="maxAthleticRegistrations"
+                    id="maxOffStageRegistrations"
                     type="number"
                     min="1"
                     max="10"
-                    value={settings.maxAthleticRegistrations}
+                    value={settings.maxOffStageRegistrations}
                     onChange={(e) => setSettings(prev => ({
                       ...prev,
-                      maxAthleticRegistrations: parseInt(e.target.value) || 1
+                      maxOffStageRegistrations: parseInt(e.target.value) || 1
                     }))}
                     disabled={saving}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Students can register for up to this many individual athletic events
+                    Students can register for up to this many off-stage events
                   </p>
                 </div>
               </div>

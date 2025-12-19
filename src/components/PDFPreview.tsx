@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Users, Trophy, Calendar, Download } from 'lucide-react';
+import { FileText, Users, Palette, Calendar, Download } from 'lucide-react';
 
 interface PDFPreviewProps {
   className?: string;
@@ -13,21 +13,21 @@ export function PDFPreview({ className }: PDFPreviewProps) {
       description: 'Complete list of all student registrations across all years',
       icon: Users,
       badge: 'Admin Only',
-      features: ['Student details', 'Sport information', 'Registration status', 'Event dates', 'Summary statistics']
+      features: ['Student details', 'Event information', 'Registration status', 'Event dates', 'Summary statistics']
     },
     {
       title: 'Year-wise Reports',
       description: 'Filter registrations by specific academic year',
       icon: Calendar,
       badge: 'Admin Only',
-      features: ['First/Second/Third/Fourth year filtering', 'Year-specific statistics', 'Department breakdown', 'Sport participation by year']
+      features: ['First/Second/Third/Fourth year filtering', 'Year-specific statistics', 'Department breakdown', 'Event participation by year']
     },
     {
-      title: 'Sport-wise Reports',
-      description: 'Registrations organized by sport/event',
-      icon: Trophy,
+      title: 'Event-wise Reports',
+      description: 'Registrations organized by event/event',
+      icon: Palette,
       badge: 'Admin Only',
-      features: ['Grouped by sport name', 'Participant lists per event', 'Event capacity analysis', 'Game vs Athletic breakdown']
+      features: ['Grouped by event name', 'Participant lists per event', 'Event capacity analysis', 'Game vs Athletic breakdown']
     }
   ];
 
@@ -37,7 +37,7 @@ export function PDFPreview({ className }: PDFPreviewProps) {
       description: 'Download registrations for your year students only',
       icon: Users,
       badge: 'Coordinator',
-      features: ['Own year students only', 'All sports they\'re registered for', 'Registration status tracking', 'Personal activity report']
+      features: ['Own year students only', 'All events they\'re registered for', 'Registration status tracking', 'Personal activity report']
     }
   ];
 
@@ -126,8 +126,8 @@ export function PDFPreview({ className }: PDFPreviewProps) {
           <div>
             <h4 className="font-medium mb-2">For Administrators:</h4>
             <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground ml-4">
-              <li>Access PDF downloads from Dashboard, Sports, or Registrations pages</li>
-              <li>Choose from dropdown: All Registrations, Year-wise, or Sport-wise reports</li>
+              <li>Access PDF downloads from Dashboard, Events, or Registrations pages</li>
+              <li>Choose from dropdown: All Registrations, Year-wise, or Event-wise reports</li>
               <li>Select specific year filter if needed</li>
               <li>Click download to generate and save PDF automatically</li>
             </ol>

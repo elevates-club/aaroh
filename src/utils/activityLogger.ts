@@ -40,7 +40,7 @@ export const logUserLogin = async (userId: string, details?: Record<string, any>
       p_action: 'user_login',
       p_details: details || {}
     });
-    
+
     if (error) {
       console.error('Error logging user login:', error);
     }
@@ -58,7 +58,7 @@ export const logUserLogout = async (userId: string, sessionId?: string): Promise
       p_user_id: userId,
       p_session_id: sessionId
     });
-    
+
     if (error) {
       console.error('Error logging user logout:', error);
     }
@@ -83,17 +83,17 @@ export const logStudentActivity = async (
 };
 
 /**
- * Log sport-related activities
+ * Log event-related activities
  */
-export const logSportActivity = async (
+export const logEventActivity = async (
   userId: string,
-  action: 'sport_created' | 'sport_updated' | 'sport_deleted',
-  sportData: Record<string, any>
+  action: 'event_created' | 'event_updated' | 'event_deleted',
+  eventData: Record<string, any>
 ): Promise<void> => {
   await logActivity({
     user_id: userId,
     action,
-    details: sportData
+    details: eventData
   });
 };
 
@@ -109,5 +109,20 @@ export const logRegistrationActivity = async (
     user_id: userId,
     action,
     details: registrationData
+  });
+};
+
+/**
+ * Log system-wide settings changes
+ */
+export const logSystemActivity = async (
+  userId: string,
+  action: 'settings_updated' | 'global_registration_status_changed',
+  details: Record<string, any>
+): Promise<void> => {
+  await logActivity({
+    user_id: userId,
+    action,
+    details
   });
 };

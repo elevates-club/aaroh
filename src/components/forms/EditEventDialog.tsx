@@ -9,14 +9,19 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Edit } from 'lucide-react';
-import { EditSportForm } from './EditSportForm';
+import { EditEventForm } from './EditEventForm';
 
-interface Sport {
+interface Event {
   id: string;
   name: string;
-  type: 'game' | 'athletic';
+  category: 'on_stage' | 'off_stage';
+  mode: string;
+  registration_method: string;
   description: string;
   max_participants: number | null;
+  max_entries_per_year: number | null;
+  min_team_size: number | null;
+  max_team_size: number | null;
   registration_deadline: string | null;
   event_date: string | null;
   venue: string;
@@ -24,18 +29,18 @@ interface Sport {
   is_active: boolean;
 }
 
-interface EditSportDialogProps {
-  sport: Sport;
-  onSportUpdated?: () => void;
+interface EditEventDialogProps {
+  event: Event;
+  onEventUpdated?: () => void;
   trigger?: React.ReactNode;
 }
 
-export function EditSportDialog({ sport, onSportUpdated, trigger }: EditSportDialogProps) {
+export function EditEventDialog({ event, onEventUpdated, trigger }: EditEventDialogProps) {
   const [open, setOpen] = useState(false);
 
   const handleSuccess = () => {
     setOpen(false);
-    onSportUpdated?.();
+    onEventUpdated?.();
   };
 
   const handleCancel = () => {
@@ -55,12 +60,12 @@ export function EditSportDialog({ sport, onSportUpdated, trigger }: EditSportDia
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="sr-only">
-          <DialogTitle>Edit Sports Event</DialogTitle>
+          <DialogTitle>Edit Arts Event</DialogTitle>
           <DialogDescription>
-            Update the details of this sports event
+            Update the details of this arts event
           </DialogDescription>
         </DialogHeader>
-        <EditSportForm sport={sport} onSuccess={handleSuccess} onCancel={handleCancel} />
+        <EditEventForm event={event} onSuccess={handleSuccess} onCancel={handleCancel} />
       </DialogContent>
     </Dialog>
   );

@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 interface RegistrationLimitBadgeProps {
   currentCount: number;
   limit: number;
-  sportType: 'game' | 'athletic';
+  eventType: 'on_stage' | 'off_stage';
   className?: string;
   showIcon?: boolean;
 }
@@ -13,7 +13,7 @@ interface RegistrationLimitBadgeProps {
 export function RegistrationLimitBadge({
   currentCount,
   limit,
-  sportType,
+  eventType,
   className,
   showIcon = true
 }: RegistrationLimitBadgeProps) {
@@ -76,7 +76,7 @@ export function RegistrationLimitBadge({
     >
       {showIcon && badgeProps.icon}
       <span>
-        {badgeProps.text} {sportType === 'game' ? 'Games' : 'Athletics'}
+        {badgeProps.text} {eventType === 'on_stage' ? 'On-Stage' : 'Off-Stage'}
       </span>
     </Badge>
   );

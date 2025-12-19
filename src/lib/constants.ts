@@ -1,9 +1,11 @@
 export const USER_ROLES = {
   ADMIN: 'admin',
+  EVENT_MANAGER: 'event_manager',
   FIRST_YEAR_COORDINATOR: 'first_year_coordinator',
-  SECOND_YEAR_COORDINATOR: 'second_year_coordinator', 
+  SECOND_YEAR_COORDINATOR: 'second_year_coordinator',
   THIRD_YEAR_COORDINATOR: 'third_year_coordinator',
-  FOURTH_YEAR_COORDINATOR: 'fourth_year_coordinator'
+  FOURTH_YEAR_COORDINATOR: 'fourth_year_coordinator',
+  STUDENT: 'student'
 } as const;
 
 export const ACADEMIC_YEARS = {
@@ -13,9 +15,19 @@ export const ACADEMIC_YEARS = {
   fourth: 'Fourth Year'
 } as const;
 
-export const SPORT_TYPES = {
-  GAME: 'game',
-  ATHLETIC: 'athletic'
+export const EVENT_CATEGORIES = {
+  ON_STAGE: 'on_stage',
+  OFF_STAGE: 'off_stage'
+} as const;
+
+export const EVENT_MODES = {
+  INDIVIDUAL: 'individual',
+  GROUP: 'group'
+} as const;
+
+export const REGISTRATION_METHODS = {
+  STUDENT: 'student',
+  COORDINATOR: 'coordinator'
 } as const;
 
 export const REGISTRATION_STATUS = {
@@ -36,6 +48,8 @@ export const getRoleLabel = (role: string) => {
       return 'Third Year Coordinator';
     case USER_ROLES.FOURTH_YEAR_COORDINATOR:
       return 'Fourth Year Coordinator';
+    case USER_ROLES.STUDENT:
+      return 'Student';
     default:
       return role;
   }

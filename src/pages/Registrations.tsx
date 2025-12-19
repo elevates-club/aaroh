@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, Search, Download, Users, Trophy, Calendar, Edit, Trash2, Loader2, Building, MapPin, Clock, Eye } from 'lucide-react';
+import { FileText, Search, Download, Users, Palette, Calendar, Edit, Trash2, Loader2, Building, MapPin, Clock, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRole } from '@/contexts/RoleContext';
 import { USER_ROLES } from '@/lib/constants';
+import { hasRole, getCoordinatorYear } from '@/lib/roleUtils';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { PDFDownloadButton } from '@/components/PDFDownloadButton';
@@ -25,10 +27,10 @@ interface Registration {
     department: string;
     year: string;
   };
-  sport: {
+  event: {
     id: string;
     name: string;
-    type: 'game' | 'athletic';
+    category: 'on_stage' | 'off_stage';
     venue: string;
     event_date: string | null;
   };
@@ -36,15 +38,16 @@ interface Registration {
 
 export default function Registrations() {
   const { profile } = useAuth();
+  const { activeRole } = useRole();
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'students' | 'athletic' | 'game'>('students');
+  const [viewMode, setViewMode] = useState<'students' | 'on_stage' | 'off_stage'>('students');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pdfDownloadingId, setPdfDownloadingId] = useState<string | null>(null);
-  const [registrationLimits, setRegistrationLimits] = useState({ maxGameRegistrations: 0, maxAthleticRegistrations: 0 });
-  const [studentRegistrationCounts, setStudentRegistrationCounts] = useState<Record<string, { games: number; athletics: number }>>({});
+  const [registrationLimits, setRegistrationLimits] = useState({ maxOnStageRegistrations: 0, maxOffStageRegistrations: 0 });
+  const [studentRegistrationCounts, setStudentRegistrationCounts] = useState<Record<string, { onStage: number; offStage: number }>>({});
 
   useEffect(() => {
     fetchRegistrations();
@@ -66,28 +69,30 @@ export default function Registrations() {
             department,
             year
           ),
-          sport:sports!inner(
+          event:events!inner(
             id,
             name,
-            type,
+            category,
             venue,
             event_date
           )
         `);
 
       // Role-based filtering
-      if (profile?.role !== USER_ROLES.ADMIN) {
-        const year = profile?.role.replace('_coordinator', '').replace('_year', '') as 'first' | 'second' | 'third' | 'fourth';
-        query = query.eq('student.year', year);
+      if (!hasRole(activeRole, USER_ROLES.ADMIN)) {
+        const year = getCoordinatorYear(activeRole);
+        if (year) {
+          query = query.eq('student.year', year);
+        }
       }
 
       const { data, error } = await query.order('created_at', { ascending: false });
-      
+
       if (error) throw error;
       setRegistrations(data || []);
 
       // Fetch registration limits and student counts for admin
-      if (profile?.role === USER_ROLES.ADMIN) {
+      if (hasRole(activeRole, USER_ROLES.ADMIN)) {
         await Promise.all([
           fetchRegistrationLimitsData(),
           fetchStudentRegistrationCounts(data || [])
@@ -108,7 +113,10 @@ export default function Registrations() {
   const fetchRegistrationLimitsData = async () => {
     try {
       const limits = await fetchRegistrationLimits();
-      setRegistrationLimits(limits);
+      setRegistrationLimits({
+        maxOnStageRegistrations: limits.maxOnStageRegistrations,
+        maxOffStageRegistrations: limits.maxOffStageRegistrations
+      });
     } catch (error) {
       console.error('Error fetching registration limits:', error);
     }
@@ -117,30 +125,30 @@ export default function Registrations() {
   const fetchStudentRegistrationCounts = async (registrations: Registration[]) => {
     try {
       const studentIds = [...new Set(registrations.map(r => r.student.id))];
-      
+
       const { data, error } = await supabase
         .from('registrations')
         .select(`
           student_id,
-          sport:sports!inner(type)
+          event:events!inner(category)
         `)
         .in('student_id', studentIds)
         .in('status', ['pending', 'approved']);
 
       if (error) throw error;
 
-      const counts: Record<string, { games: number; athletics: number }> = {};
-      
+      const counts: Record<string, { onStage: number; offStage: number }> = {};
+
       studentIds.forEach(studentId => {
-        counts[studentId] = { games: 0, athletics: 0 };
+        counts[studentId] = { onStage: 0, offStage: 0 };
       });
 
-      data.forEach(reg => {
+      (data as any[]).forEach(reg => {
         if (counts[reg.student_id]) {
-          if (reg.sport.type === 'game') {
-            counts[reg.student_id].games++;
+          if (reg.event.category === 'on_stage') {
+            counts[reg.student_id].onStage++;
           } else {
-            counts[reg.student_id].athletics++;
+            counts[reg.student_id].offStage++;
           }
         }
       });
@@ -186,8 +194,8 @@ export default function Registrations() {
     }
   };
 
-  const deleteRegistration = async (registrationId: string, studentName: string, sportName: string) => {
-    if (!confirm(`Are you sure you want to remove ${studentName} from ${sportName}?`)) {
+  const deleteRegistration = async (registrationId: string, studentName: string, eventName: string) => {
+    if (!confirm(`Are you sure you want to remove ${studentName} from ${eventName}?`)) {
       return;
     }
 
@@ -202,7 +210,7 @@ export default function Registrations() {
 
       toast({
         title: 'Registration Removed',
-        description: `${studentName} has been removed from ${sportName}`,
+        description: `${studentName} has been removed from ${eventName}`,
       });
 
       fetchRegistrations();
@@ -221,14 +229,14 @@ export default function Registrations() {
   // Group registrations by view mode
   const getGroupedData = () => {
     const filtered = registrations.filter(reg => {
-      const matchesSearch = 
+      const matchesSearch =
         reg.student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         reg.student.roll_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        reg.sport.name.toLowerCase().includes(searchTerm.toLowerCase());
-      
+        reg.event.name.toLowerCase().includes(searchTerm.toLowerCase());
+
       const matchesStatus = statusFilter === 'all' || reg.status === statusFilter;
-      const matchesViewMode = viewMode === 'students' || reg.sport.type === viewMode;
-      
+      const matchesViewMode = viewMode === 'students' || reg.event.category === viewMode;
+
       return matchesSearch && matchesStatus && matchesViewMode;
     });
 
@@ -244,16 +252,16 @@ export default function Registrations() {
       });
       return studentGroups;
     } else {
-      // Group by sport
-      const sportGroups: Record<string, Registration[]> = {};
+      // Group by event
+      const eventGroups: Record<string, Registration[]> = {};
       filtered.forEach(reg => {
-        const key = reg.sport.id;
-        if (!sportGroups[key]) {
-          sportGroups[key] = [];
+        const key = reg.event.id;
+        if (!eventGroups[key]) {
+          eventGroups[key] = [];
         }
-        sportGroups[key].push(reg);
+        eventGroups[key].push(reg);
       });
-      return sportGroups;
+      return eventGroups;
     }
   };
 
@@ -268,9 +276,9 @@ export default function Registrations() {
     }
   };
 
-  const getTypeColor = (type: string) => {
-    return type === 'game' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' : 
-           'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
+  const getCategoryColor = (category: string) => {
+    return category === 'on_stage' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' :
+      'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300';
   };
 
   const groupedData = getGroupedData();
@@ -285,10 +293,10 @@ export default function Registrations() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="min-w-0 flex-1">
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">
-                  {profile?.role === USER_ROLES.ADMIN ? 'All Registrations' : 'Registration Details'}
+                  {hasRole(activeRole, USER_ROLES.ADMIN) ? 'All Registrations' : 'Registration Details'}
                 </h1>
                 <p className="text-white/90 text-sm sm:text-base">
-                  Manage sports event registrations
+                  Manage events event registrations
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
@@ -311,20 +319,20 @@ export default function Registrations() {
                   Students
                 </Button>
                 <Button
-                  variant={viewMode === 'athletic' ? 'default' : 'outline'}
-                  onClick={() => setViewMode('athletic')}
+                  variant={viewMode === 'on_stage' ? 'default' : 'outline'}
+                  onClick={() => setViewMode('on_stage')}
                   className="flex-1 sm:flex-none"
                 >
-                  <Trophy className="mr-2 h-4 w-4" />
-                  Athletic
+                  <Palette className="mr-2 h-4 w-4" />
+                  On-Stage
                 </Button>
                 <Button
-                  variant={viewMode === 'game' ? 'default' : 'outline'}
-                  onClick={() => setViewMode('game')}
+                  variant={viewMode === 'off_stage' ? 'default' : 'outline'}
+                  onClick={() => setViewMode('off_stage')}
                   className="flex-1 sm:flex-none"
                 >
-                  <Trophy className="mr-2 h-4 w-4" />
-                  Games
+                  <Palette className="mr-2 h-4 w-4" />
+                  Off-Stage
                 </Button>
               </div>
             </div>
@@ -339,13 +347,13 @@ export default function Registrations() {
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
-                    placeholder="Search by student name, roll number, or sport..."
+                    placeholder="Search by student name, roll number, or event..."
                     className="pl-10 h-11 bg-white/50 border-0 shadow-sm focus:bg-white transition-colors"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-                
+
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-full sm:w-[140px] h-11 bg-white/50 border-0 shadow-sm focus:bg-white transition-colors">
                     <SelectValue placeholder="Status" />
@@ -389,9 +397,9 @@ export default function Registrations() {
                 <div>
                   <h3 className="text-xl font-semibold mb-2">No Registrations Found</h3>
                   <p className="text-muted-foreground text-sm sm:text-base">
-                    {searchTerm || statusFilter !== 'all' 
+                    {searchTerm || statusFilter !== 'all'
                       ? 'Try adjusting your search or filter criteria.'
-                      : 'No sports registrations available yet.'
+                      : 'No events registrations available yet.'
                     }
                   </p>
                 </div>
@@ -415,18 +423,18 @@ export default function Registrations() {
                             <span className="truncate">{student.department}</span>
                           </div>
                           {/* Registration Limit Badges for Admin */}
-                          {profile?.role === USER_ROLES.ADMIN && (
+                          {hasRole(activeRole, USER_ROLES.ADMIN) && (
                             <div className="flex gap-2 mt-2">
                               <RegistrationLimitBadge
-                                currentCount={studentRegistrationCounts[student.id]?.games || 0}
-                                limit={registrationLimits.maxGameRegistrations}
-                                sportType="game"
+                                currentCount={studentRegistrationCounts[student.id]?.onStage || 0}
+                                limit={registrationLimits.maxOnStageRegistrations}
+                                eventType="on_stage"
                                 showIcon={true}
                               />
                               <RegistrationLimitBadge
-                                currentCount={studentRegistrationCounts[student.id]?.athletics || 0}
-                                limit={registrationLimits.maxAthleticRegistrations}
-                                sportType="athletic"
+                                currentCount={studentRegistrationCounts[student.id]?.offStage || 0}
+                                limit={registrationLimits.maxOffStageRegistrations}
+                                eventType="off_stage"
                                 showIcon={true}
                               />
                             </div>
@@ -443,21 +451,21 @@ export default function Registrations() {
                           <div key={registration.id} className="p-3 bg-muted/50 rounded-lg border">
                             <div className="flex items-start justify-between mb-2">
                               <div className="flex items-center gap-2">
-                                <Trophy className="h-4 w-4 text-muted-foreground" />
-                                <span className="font-medium text-sm">{registration.sport.name}</span>
-                                <Badge className={`${getTypeColor(registration.sport.type)} text-xs`}>
-                                  {registration.sport.type === 'game' ? 'Game' : 'Athletic'}
+                                <Palette className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-medium text-sm">{registration.event.name}</span>
+                                <Badge className={`${getCategoryColor(registration.event.category)} text-xs`}>
+                                  {registration.event.category === 'on_stage' ? 'On-Stage' : 'Off-Stage'}
                                 </Badge>
                               </div>
                               <Badge className={`${getStatusColor(registration.status)} text-xs`}>
                                 {registration.status}
                               </Badge>
                             </div>
-                            
+
                             <div className="space-y-1 text-xs text-muted-foreground">
                               <div className="flex items-center gap-2">
                                 <MapPin className="h-3 w-3" />
-                                <span className="truncate">{registration.sport.venue}</span>
+                                <span className="truncate">{registration.event.venue}</span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Calendar className="h-3 w-3" />
@@ -466,7 +474,7 @@ export default function Registrations() {
                             </div>
 
                             <div className="flex items-center justify-end gap-2 mt-3 pt-2 border-t">
-                              {profile?.role === USER_ROLES.ADMIN && registration.status === 'pending' && (
+                              {hasRole(activeRole, USER_ROLES.ADMIN) && registration.status === 'pending' && (
                                 <>
                                   <Button
                                     size="sm"
@@ -488,7 +496,7 @@ export default function Registrations() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => deleteRegistration(registration.id, student.name, registration.sport.name)}
+                                onClick={() => deleteRegistration(registration.id, student.name, registration.event.name)}
                                 disabled={deletingId === registration.id}
                                 className="h-7 px-2 text-xs"
                               >
@@ -506,16 +514,16 @@ export default function Registrations() {
                   </Card>
                 );
               } else {
-                const sport = registrations[0].sport;
+                const event = registrations[0].event;
                 return (
                   <Card key={key} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300">
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="space-y-2 min-w-0 flex-1">
-                          <CardTitle className="text-lg font-bold truncate">{sport.name}</CardTitle>
+                          <CardTitle className="text-lg font-bold truncate">{event.name}</CardTitle>
                           <div className="flex items-center gap-2">
-                            <Badge className={`${getTypeColor(sport.type)} text-xs`}>
-                              {sport.type === 'game' ? 'Game' : 'Athletic'}
+                            <Badge className={`${getCategoryColor(event.category)} text-xs`}>
+                              {event.category === 'on_stage' ? 'On-Stage' : 'Off-Stage'}
                             </Badge>
                             <span className="text-sm text-muted-foreground">
                               {registrations.length} participant{registrations.length !== 1 ? 's' : ''}
@@ -527,13 +535,13 @@ export default function Registrations() {
                           size="sm"
                           onClick={async () => {
                             try {
-                              setPdfDownloadingId(sport.id);
-                              // PDF download for this specific sport
-                              const { generateSportParticipantsPDF } = await import('@/utils/pdfGeneratorV2');
-                              await generateSportParticipantsPDF(sport, profile?.role);
+                              setPdfDownloadingId(event.id);
+                              // PDF download for this specific event
+                              const { generateEventParticipantsPDF } = await import('@/utils/pdfGeneratorV2');
+                              await generateEventParticipantsPDF(event as any, profile?.role);
                               toast({
                                 title: 'PDF Downloaded',
-                                description: `Participants list for ${sport.name} has been downloaded.`,
+                                description: `Participants list for ${event.name} has been downloaded.`,
                               });
                             } catch (error) {
                               console.error('Error downloading PDF:', error);
@@ -546,11 +554,11 @@ export default function Registrations() {
                               setPdfDownloadingId(null);
                             }
                           }}
-                          disabled={pdfDownloadingId === sport.id}
+                          disabled={pdfDownloadingId === event.id}
                           className="h-8 w-8 p-0"
                           title="Download participants list"
                         >
-                          {pdfDownloadingId === sport.id ? (
+                          {pdfDownloadingId === event.id ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
                             <Download className="h-4 w-4" />
@@ -562,12 +570,12 @@ export default function Registrations() {
                       <div className="space-y-2 text-sm">
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <MapPin className="h-4 w-4" />
-                          <span className="truncate">{sport.venue}</span>
+                          <span className="truncate">{event.venue}</span>
                         </div>
-                        {sport.event_date && (
+                        {event.event_date && (
                           <div className="flex items-center gap-2 text-muted-foreground">
                             <Calendar className="h-4 w-4" />
-                            <span>Event: {format(new Date(sport.event_date), 'MMM dd, yyyy')}</span>
+                            <span>Event: {format(new Date(event.event_date), 'MMM dd, yyyy')}</span>
                           </div>
                         )}
                       </div>
@@ -588,7 +596,7 @@ export default function Registrations() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => deleteRegistration(registration.id, registration.student.name, sport.name)}
+                                  onClick={() => deleteRegistration(registration.id, registration.student.name, event.name)}
                                   disabled={deletingId === registration.id}
                                   className="h-6 w-6 p-0"
                                 >

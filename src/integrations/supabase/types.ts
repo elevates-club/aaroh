@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
@@ -20,6 +20,8 @@ export type Database = {
           created_at: string | null
           details: Json | null
           id: string
+          ip_address: string | null
+          user_agent: string | null
           user_id: string | null
         }
         Insert: {
@@ -27,6 +29,8 @@ export type Database = {
           created_at?: string | null
           details?: Json | null
           id?: string
+          ip_address?: string | null
+          user_agent?: string | null
           user_id?: string | null
         }
         Update: {
@@ -34,6 +38,8 @@ export type Database = {
           created_at?: string | null
           details?: Json | null
           id?: string
+          ip_address?: string | null
+          user_agent?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -46,13 +52,83 @@ export type Database = {
           },
         ]
       }
+      events: {
+        Row: {
+          category: Database["public"]["Enums"]["event_category"]
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          event_date: string | null
+          id: string
+          is_active: boolean | null
+          max_entries_per_year: number | null
+          max_participants: number | null
+          max_team_size: number | null
+          min_team_size: number | null
+          mode: Database["public"]["Enums"]["event_mode"]
+          name: string
+          registration_deadline: string | null
+          registration_method: Database["public"]["Enums"]["registration_method"]
+          updated_at: string | null
+          venue: string | null
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["event_category"]
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          event_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_entries_per_year?: number | null
+          max_participants?: number | null
+          max_team_size?: number | null
+          min_team_size?: number | null
+          mode?: Database["public"]["Enums"]["event_mode"]
+          name: string
+          registration_deadline?: string | null
+          registration_method?: Database["public"]["Enums"]["registration_method"]
+          updated_at?: string | null
+          venue?: string | null
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["event_category"]
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          event_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_entries_per_year?: number | null
+          max_participants?: number | null
+          max_team_size?: number | null
+          min_team_size?: number | null
+          mode?: Database["public"]["Enums"]["event_mode"]
+          name?: string
+          registration_deadline?: string | null
+          registration_method?: Database["public"]["Enums"]["registration_method"]
+          updated_at?: string | null
+          venue?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
           email: string
           full_name: string
           id: string
-          role: Database["public"]["Enums"]["user_role"]
+          is_first_login: boolean | null
+          profile_completed: boolean | null
+          role: string[]
           updated_at: string | null
           user_id: string
         }
@@ -61,7 +137,9 @@ export type Database = {
           email: string
           full_name: string
           id?: string
-          role: Database["public"]["Enums"]["user_role"]
+          is_first_login?: boolean | null
+          profile_completed?: boolean | null
+          role: string[]
           updated_at?: string | null
           user_id: string
         }
@@ -70,7 +148,9 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
-          role?: Database["public"]["Enums"]["user_role"]
+          is_first_login?: boolean | null
+          profile_completed?: boolean | null
+          role?: string[]
           updated_at?: string | null
           user_id?: string
         }
@@ -79,44 +159,47 @@ export type Database = {
       registrations: {
         Row: {
           created_at: string | null
+          event_id: string
+          group_id: string | null
           id: string
           registered_by: string | null
-          sport_id: string
           status: Database["public"]["Enums"]["registration_status"] | null
           student_id: string
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
+          event_id: string
+          group_id?: string | null
           id?: string
           registered_by?: string | null
-          sport_id: string
           status?: Database["public"]["Enums"]["registration_status"] | null
           student_id: string
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
+          event_id?: string
+          group_id?: string | null
           id?: string
           registered_by?: string | null
-          sport_id?: string
           status?: Database["public"]["Enums"]["registration_status"] | null
           student_id?: string
           updated_at?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "registrations_registered_by_fkey"
             columns: ["registered_by"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "registrations_sport_id_fkey"
-            columns: ["sport_id"]
-            isOneToOne: false
-            referencedRelation: "sports"
             referencedColumns: ["id"]
           },
           {
@@ -160,85 +243,44 @@ export type Database = {
           },
         ]
       }
-      sports: {
-        Row: {
-          created_at: string | null
-          created_by: string | null
-          description: string | null
-          event_date: string | null
-          id: string
-          is_active: boolean | null
-          max_participants: number | null
-          name: string
-          registration_deadline: string | null
-          type: Database["public"]["Enums"]["sport_type"]
-          updated_at: string | null
-          venue: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          event_date?: string | null
-          id?: string
-          is_active?: boolean | null
-          max_participants?: number | null
-          name: string
-          registration_deadline?: string | null
-          type: Database["public"]["Enums"]["sport_type"]
-          updated_at?: string | null
-          venue?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          event_date?: string | null
-          id?: string
-          is_active?: boolean | null
-          max_participants?: number | null
-          name?: string
-          registration_deadline?: string | null
-          type?: Database["public"]["Enums"]["sport_type"]
-          updated_at?: string | null
-          venue?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "sports_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       students: {
         Row: {
           created_at: string | null
           department: string
+          email: string | null
+          gender: string | null
           id: string
           name: string
+          phone_number: string | null
           roll_number: string
           updated_at: string | null
+          user_id: string | null
           year: Database["public"]["Enums"]["academic_year"]
         }
         Insert: {
           created_at?: string | null
           department: string
+          email?: string | null
+          gender?: string | null
           id?: string
           name: string
+          phone_number?: string | null
           roll_number: string
           updated_at?: string | null
+          user_id?: string | null
           year: Database["public"]["Enums"]["academic_year"]
         }
         Update: {
           created_at?: string | null
           department?: string
+          email?: string | null
+          gender?: string | null
           id?: string
           name?: string
+          phone_number?: string | null
           roll_number?: string
           updated_at?: string | null
+          user_id?: string | null
           year?: Database["public"]["Enums"]["academic_year"]
         }
         Relationships: []
@@ -248,18 +290,45 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      admin_update_student_roll_number: {
+        Args: { p_new_roll_number: string; p_old_roll_number: string }
+        Returns: Json
+      }
+      check_email_availability: { Args: { p_email: string }; Returns: boolean }
+      create_student_accounts_from_csv: {
+        Args: never
+        Returns: {
+          message: string
+          roll_number: string
+          success: boolean
+        }[]
+      }
+      link_student_to_auth_user: {
+        Args: { p_roll_number: string; p_user_id: string }
+        Returns: boolean
+      }
+      log_user_login: {
+        Args: { p_action: string; p_details?: Json; p_user_id: string }
+        Returns: undefined
+      }
+      update_student_auth_email: {
+        Args: { p_new_email: string; p_user_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       academic_year: "first" | "second" | "third" | "fourth"
+      event_category: "on_stage" | "off_stage"
+      event_mode: "individual" | "group"
+      registration_method: "student" | "coordinator"
       registration_status: "pending" | "approved" | "rejected"
-      sport_type: "game" | "athletic"
       user_role:
         | "admin"
         | "first_year_coordinator"
         | "second_year_coordinator"
         | "third_year_coordinator"
         | "fourth_year_coordinator"
+        | "student"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -388,14 +457,17 @@ export const Constants = {
   public: {
     Enums: {
       academic_year: ["first", "second", "third", "fourth"],
+      event_category: ["on_stage", "off_stage"],
+      event_mode: ["individual", "group"],
+      registration_method: ["student", "coordinator"],
       registration_status: ["pending", "approved", "rejected"],
-      sport_type: ["game", "athletic"],
       user_role: [
         "admin",
         "first_year_coordinator",
         "second_year_coordinator",
         "third_year_coordinator",
         "fourth_year_coordinator",
+        "student",
       ],
     },
   },

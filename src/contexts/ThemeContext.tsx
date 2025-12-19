@@ -19,7 +19,7 @@ export const useTheme = () => {
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>(() => {
-    const savedTheme = localStorage.getItem('sports-theme');
+    const savedTheme = localStorage.getItem('events-theme');
     return (savedTheme as Theme) || 'light';
   });
 
@@ -30,7 +30,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } else {
       root.classList.remove('dark');
     }
-    localStorage.setItem('sports-theme', theme);
+    localStorage.setItem('events-theme', theme);
   }, [theme]);
 
   const toggleTheme = () => {

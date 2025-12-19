@@ -9,19 +9,19 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { CreateSportForm } from './CreateSportForm';
+import { CreateEventForm } from './CreateEventForm';
 
-interface CreateSportDialogProps {
-  onSportCreated?: () => void;
+interface CreateEventDialogProps {
+  onEventCreated?: () => void;
   trigger?: React.ReactNode;
 }
 
-export function CreateSportDialog({ onSportCreated, trigger }: CreateSportDialogProps) {
+export function CreateEventDialog({ onEventCreated, trigger }: CreateEventDialogProps) {
   const [open, setOpen] = useState(false);
 
   const handleSuccess = () => {
     setOpen(false);
-    onSportCreated?.();
+    onEventCreated?.();
   };
 
   const handleCancel = () => {
@@ -41,12 +41,12 @@ export function CreateSportDialog({ onSportCreated, trigger }: CreateSportDialog
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="sr-only">
-          <DialogTitle>Create Sports Event</DialogTitle>
+          <DialogTitle>Create Events Event</DialogTitle>
           <DialogDescription>
             Create a new game or athletic event for student registration
           </DialogDescription>
         </DialogHeader>
-        <CreateSportForm onSuccess={handleSuccess} onCancel={handleCancel} />
+        <CreateEventForm onSuccess={handleSuccess} onCancel={handleCancel} />
       </DialogContent>
     </Dialog>
   );

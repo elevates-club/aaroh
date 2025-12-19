@@ -8,7 +8,10 @@ interface Profile {
   id: string;
   email: string;
   full_name: string;
-  role: string;
+  role: string[]; // Updated to array
+  phone?: string;
+  is_first_login?: boolean;
+  profile_completed?: boolean;
 }
 
 interface AuthContextType {
@@ -47,7 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
       setProfile(data);
-      
+
       // Only log user login activity if explicitly requested (on actual sign-in)
       if (shouldLogLogin) {
         await logUserLogin(data.id, {
@@ -72,7 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         if (session?.user) {
           setTimeout(() => {
             // Only log login on actual sign-in events, not on page refresh
@@ -103,10 +106,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (identifier: string, password: string) => {
     try {
+      // Dual login support:
+      // - Students: use roll number (gets converted to system email)
+      // - Admins/Coordinators: use email directly
+
+      let loginEmail = identifier;
+
+      console.log('🔐 signIn called with identifier:', identifier, 'contains @:', identifier.includes('@'));
+
+      // If identifier doesn't contain @, treat as roll number
+      if (!identifier.includes('@')) {
+        // Try to get the actual email from the database first
+        console.log('🔍 Lookup actual email for:', identifier);
+        const { data: realEmail, error: lookupError } = await supabase
+          .rpc('get_student_login_email' as any, { p_roll_number: identifier });
+
+        console.log('🔍 Lookup result:', { realEmail, lookupError });
+
+        if (realEmail && !lookupError) {
+          loginEmail = realEmail as string;
+        } else {
+          // Fallback to system email format if not found (or for initial login)
+          const rollNumber = identifier.toUpperCase();
+          loginEmail = `noreply-${rollNumber}@ekc.edu.in`;
+          console.log('⚠️ Fallback to system email:', loginEmail);
+        }
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
-        email,
+        email: loginEmail,
         password,
       });
 
@@ -120,7 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (email: string, password: string, fullName: string, role: string) => {
     try {
       const redirectUrl = `${window.location.origin}/`;
-      
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -144,9 +174,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // Log logout activity before signing out
       if (profile?.id) {
-        await logUserLogout(profile.id);
+        try {
+          await logUserLogout(profile.id);
+        } catch (logError) {
+          console.warn('Failed to log logout activity:', logError);
+          // Continue with sign out even if logging fails
+        }
       }
-      
+
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       setUser(null);
