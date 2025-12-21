@@ -178,7 +178,7 @@ export function AppSidebar() {
         {/* Brand Credits */}
         <div className="mt-6 pt-4 border-t border-border/40 group-data-[collapsible=icon]:hidden">
           <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/30 font-black text-center leading-relaxed">
-            Aaroh Console <br />
+            Aaroh 26 Console <br />
             <span className="text-primary/50">Developed By Elevates</span>
           </p>
         </div>
