@@ -89,7 +89,10 @@ export default function ActivityLogs() {
           )
         `, { count: 'exact' });
 
-      if (profile.role && !profile.role.includes(USER_ROLES.ADMIN) && profile.id) {
+      if (profile.role &&
+        !hasRole(profile.role, USER_ROLES.ADMIN) &&
+        !hasRole(profile.role, USER_ROLES.EVENT_MANAGER) &&
+        profile.id) {
         query = query.eq('user_id', profile.id);
       }
 

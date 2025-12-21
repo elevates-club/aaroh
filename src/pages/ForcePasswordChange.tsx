@@ -101,7 +101,7 @@ export function ForcePasswordChange() {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
-            <Card className="w-full max-w-md p-8 space-y-6">
+            <Card className="w-full max-w-md p-6 md:p-8 space-y-6">
                 <div className="text-center space-y-2">
                     <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
                         <Lock className="w-8 h-8 text-primary" />

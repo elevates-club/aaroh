@@ -9,7 +9,8 @@ export interface StudentRegistrationData {
   department: string;
   year: string;
   event_name: string;
-  event_type: 'game' | 'athletic';
+  category: string;
+  // event_type removed as it correlates to category
   venue?: string;
   event_date?: string;
   registration_date: string;
@@ -33,28 +34,28 @@ export class PDFGeneratorV2 {
 
   private addHeader(title: string, subtitle?: string) {
     const pageWidth = this.doc.internal.pageSize.width;
-    
+
     // Add logo/title area
     this.doc.setFillColor(59, 130, 246); // Primary blue
     this.doc.rect(0, 0, pageWidth, 25, 'F');
-    
+
     // Title
     this.doc.setTextColor(255, 255, 255);
     this.doc.setFontSize(16);
     this.doc.setFont('helvetica', 'bold');
     this.doc.text(title, 14, 16);
-    
+
     // Subtitle
     if (subtitle) {
       this.doc.setFontSize(10);
       this.doc.setFont('helvetica', 'normal');
       this.doc.text(subtitle, 14, 22);
     }
-    
+
     // Generated date
     this.doc.setFontSize(8);
     this.doc.text(`Generated: ${format(new Date(), 'PPp')}`, pageWidth - 14, 16, { align: 'right' });
-    
+
     // Reset text color
     this.doc.setTextColor(0, 0, 0);
   }
@@ -62,7 +63,7 @@ export class PDFGeneratorV2 {
   private addFooter() {
     const pageHeight = this.doc.internal.pageSize.height;
     const pageWidth = this.doc.internal.pageSize.width;
-    
+
     this.doc.setFontSize(8);
     this.doc.setTextColor(128, 128, 128);
     this.doc.text('Events Management System', 14, pageHeight - 10);
@@ -77,7 +78,7 @@ export class PDFGeneratorV2 {
         <td style="border: 1px solid #ddd; padding: 8px; color: black;">${item.department}</td>
         <td style="border: 1px solid #ddd; padding: 8px; color: black;">${item.year.charAt(0).toUpperCase() + item.year.slice(1)}</td>
         <td style="border: 1px solid #ddd; padding: 8px; color: black;">${item.event_name}</td>
-        <td style="border: 1px solid #ddd; padding: 8px; color: black;">${item.event_type === 'game' ? 'Game' : 'Athletic'}</td>
+        <td style="border: 1px solid #ddd; padding: 8px; color: black;">${item.category ? item.category.replace('_', ' ').toUpperCase() : 'N/A'}</td>
       </tr>
     `).join('');
 
@@ -90,8 +91,8 @@ export class PDFGeneratorV2 {
               <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: white;">Roll Number</th>
               <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: white;">Department</th>
               <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: white;">Year</th>
-              <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: white;">Event/Event</th>
-              <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: white;">Type</th>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: white;">Event</th>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: left; color: white;">Category</th>
             </tr>
           </thead>
           <tbody>
@@ -104,7 +105,7 @@ export class PDFGeneratorV2 {
 
   private createSummaryHTML(data: StudentRegistrationData[]): string {
     const summary = this.generateSummary(data);
-    const summaryItems = Object.entries(summary).map(([key, value]) => 
+    const summaryItems = Object.entries(summary).map(([key, value]) =>
       `<div style="margin: 5px 0;"><strong>${key}:</strong> ${value}</div>`
     ).join('');
 
@@ -119,8 +120,8 @@ export class PDFGeneratorV2 {
   private generateSummary(data: StudentRegistrationData[]) {
     const summary: Record<string, number | string> = {
       'Total Registrations': data.length,
-      'Games': data.filter(d => d.event_type === 'game').length,
-      'Athletic Events': data.filter(d => d.event_type === 'athletic').length,
+      'On-Stage': data.filter(d => d.category === 'on_stage').length,
+      'Off-Stage': data.filter(d => d.category === 'off_stage').length,
       'Approved': data.filter(d => d.status === 'approved').length,
       'Pending': data.filter(d => d.status === 'pending').length,
     };
@@ -152,7 +153,7 @@ export class PDFGeneratorV2 {
       container.style.width = '800px';
       container.style.backgroundColor = 'white';
       container.style.color = 'black';
-      
+
       // Add header HTML
       const headerHTML = options.includeHeader !== false ? `
         <div style="background-color: #3b82f6; color: white; padding: 15px; margin-bottom: 20px;">
@@ -229,7 +230,7 @@ export class PDFGeneratorV2 {
       container.style.width = '800px';
       container.style.backgroundColor = 'white';
       container.style.color = 'black';
-      
+
       // Add header HTML
       const headerHTML = options.includeHeader !== false ? `
         <div style="background-color: #3b82f6; color: white; padding: 15px; margin-bottom: 20px;">
@@ -330,7 +331,7 @@ export const generateAdminAllRegistrationsPDF = async (
   registrations: StudentRegistrationData[]
 ): Promise<void> => {
   const generator = new PDFGeneratorV2();
-  
+
   await generator.generateStudentRegistrationsPDF(registrations, {
     title: 'All Student Registrations',
     subtitle: 'Complete list of all events registrations',
@@ -343,7 +344,7 @@ export const generateAdminYearWiseRegistrationsPDF = async (
   year: string
 ): Promise<void> => {
   const generator = new PDFGeneratorV2();
-  
+
   await generator.generateStudentRegistrationsPDF(registrations, {
     title: `${year.charAt(0).toUpperCase() + year.slice(1)} Year Student Registrations`,
     subtitle: `Events registrations for ${year} year students`,
@@ -356,7 +357,7 @@ export const generateCoordinatorRegistrationsPDF = async (
   coordinatorYear: string
 ): Promise<void> => {
   const generator = new PDFGeneratorV2();
-  
+
   await generator.generateStudentRegistrationsPDF(registrations, {
     title: `My Students' Events Registrations`,
     subtitle: `${coordinatorYear.charAt(0).toUpperCase() + coordinatorYear.slice(1)} year coordinator report`,
@@ -370,7 +371,7 @@ export const generateEventWiseRegistrationsPDF = async (
   filename: string
 ): Promise<void> => {
   const generator = new PDFGeneratorV2();
-  
+
   await generator.generateEventWiseRegistrationsPDF(registrationsByEvent, {
     title,
     subtitle: 'Registrations organized by event/event',
@@ -379,11 +380,11 @@ export const generateEventWiseRegistrationsPDF = async (
 };
 
 export const generateEventParticipantsPDF = async (
-  event: { id: string; name: string; type: 'game' | 'athletic'; venue: string; event_date?: string | null },
+  event: { id: string; name: string; category: string; venue: string; event_date?: string | null },
   userRole?: string
 ): Promise<void> => {
   const { supabase } = await import('@/integrations/supabase/client');
-  
+
   try {
     // Build the query based on user role
     let query = supabase
@@ -410,7 +411,7 @@ export const generateEventParticipantsPDF = async (
     }
 
     const { data: registrations, error } = await query;
-    
+
     if (error) {
       throw error;
     }
@@ -423,7 +424,7 @@ export const generateEventParticipantsPDF = async (
       department: reg.student.department,
       year: reg.student.year,
       event_name: event.name,
-      event_type: event.type,
+      category: event.category,
       venue: event.venue,
       event_date: event.event_date || undefined,
       registration_date: reg.created_at,
@@ -431,12 +432,12 @@ export const generateEventParticipantsPDF = async (
     }));
 
     const generator = new PDFGeneratorV2();
-    
+
     const title = `${event.name} - Participants List`;
-    const subtitle = userRole === 'admin' 
-      ? 'All registered participants' 
+    const subtitle = userRole === 'admin'
+      ? 'All registered participants'
       : `${userRole?.replace('_coordinator', '').replace('_year', '')} year participants only`;
-    
+
     await generator.generateStudentRegistrationsPDF(registrationData, {
       title,
       subtitle,

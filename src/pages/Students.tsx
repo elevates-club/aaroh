@@ -270,12 +270,17 @@ export default function Students() {
   };
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
+    <div className="w-full max-w-[100vw] overflow-x-hidden p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 pb-20">
       {/* Header */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate">Students</h1>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate">Students</h1>
+              <Badge variant="secondary" className="flex-shrink-0 px-2 py-1 text-xs sm:text-sm font-bold bg-muted text-muted-foreground border-border/50">
+                {stats.total} Total
+              </Badge>
+            </div>
             <p className="text-sm sm:text-base text-muted-foreground mt-1">
               {hasRole(profile?.role, USER_ROLES.ADMIN)
                 ? 'Manage all students across all years'
@@ -285,7 +290,7 @@ export default function Students() {
           </div>
 
           {hasRole(profile?.role, USER_ROLES.ADMIN) && (
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 w-full sm:w-auto">
               <AddStudentDialog onStudentAdded={fetchStudents} />
               <CSVUploadDialog onStudentsAdded={fetchStudents} />
             </div>
@@ -293,36 +298,23 @@ export default function Students() {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 gap-3 sm:gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Total Students</CardTitle>
-            <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg sm:text-2xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Filters */}
-      <div className="flex flex-col gap-3 sm:gap-4">
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Search by name, roll number, or department..."
-              className="pl-10 h-10 sm:h-9"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Search..."
+            className="pl-10 h-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
 
+        <div className="flex gap-2 w-full sm:w-auto">
           {hasRole(profile?.role, USER_ROLES.ADMIN) && (
             <Select value={yearFilter} onValueChange={setYearFilter}>
-              <SelectTrigger className="w-full sm:w-[180px] h-10 sm:h-9">
-                <SelectValue placeholder="Filter by year" />
+              <SelectTrigger className="flex-1 sm:w-[180px] h-10">
+                <SelectValue placeholder="All Years" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Years</SelectItem>
@@ -334,16 +326,15 @@ export default function Students() {
               </SelectContent>
             </Select>
           )}
-        </div>
 
-        {filteredStudents.length > 0 && (
-          <div className="flex justify-end">
-            <Button onClick={downloadStudentsCSV} variant="outline" size="sm" className="h-9">
+          {filteredStudents.length > 0 && (
+            <Button onClick={downloadStudentsCSV} variant="outline" className="h-10 px-3 flex-shrink-0">
               <Download className="mr-2 h-4 w-4" />
-              Download CSV
+              <span className="hidden sm:inline">Download CSV</span>
+              <span className="inline sm:hidden">CSV</span>
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Students Table */}
@@ -373,7 +364,7 @@ export default function Students() {
           ) : (
             <>
               {/* Mobile Card View */}
-              <div className="block sm:hidden">
+              <div className="block lg:hidden">
                 <div className="space-y-3 p-4">
                   {filteredStudents.map((student) => (
                     <Card key={student.id} className="p-4">
@@ -436,7 +427,7 @@ export default function Students() {
               </div>
 
               {/* Desktop Table View */}
-              <div className="hidden sm:block">
+              <div className="hidden lg:block">
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>

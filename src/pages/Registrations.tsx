@@ -542,7 +542,7 @@ export default function Registrations() {
                               setPdfDownloadingId(event.id);
                               // PDF download for this specific event
                               const { generateEventParticipantsPDF } = await import('@/utils/pdfGeneratorV2');
-                              await generateEventParticipantsPDF(event as any, profile?.role);
+                              await generateEventParticipantsPDF(event as any, activeRole);
                               toast({
                                 title: 'PDF Downloaded',
                                 description: `Participants list for ${event.name} has been downloaded.`,

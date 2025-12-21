@@ -12,11 +12,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Upload, 
-  FileText, 
-  CheckCircle, 
-  AlertCircle, 
+import {
+  Upload,
+  FileText,
+  CheckCircle,
+  AlertCircle,
   Download,
   Loader2,
   X
@@ -53,10 +53,10 @@ export function CSVUploadDialog({ onStudentsAdded, trigger }: CSVUploadDialogPro
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const defaultTrigger = (
-    <Button variant="outline" className="w-full sm:w-auto">
-      <Upload className="mr-2 h-4 w-4" />
-      <span className="hidden xs:inline">Bulk Upload CSV</span>
-      <span className="xs:hidden">CSV Upload</span>
+    <Button variant="outline" className="w-full sm:w-auto min-w-0">
+      <Upload className="mr-2 h-4 w-4 flex-shrink-0" />
+      <span className="hidden xs:inline truncate">Bulk Upload CSV</span>
+      <span className="xs:hidden truncate">CSV Upload</span>
     </Button>
   );
 
@@ -84,7 +84,7 @@ export function CSVUploadDialog({ onStudentsAdded, trigger }: CSVUploadDialogPro
 
     for (let i = 1; i < lines.length; i++) { // Skip header row
       const columns = lines[i].split(',').map(col => col.trim().replace(/"/g, ''));
-      
+
       if (columns.length >= 4) {
         const year = columns[3].toLowerCase();
         if (['first', 'second', 'third', 'fourth'].includes(year)) {
@@ -147,7 +147,7 @@ export function CSVUploadDialog({ onStudentsAdded, trigger }: CSVUploadDialogPro
     try {
       for (let i = 0; i < csvData.length; i++) {
         const student = csvData[i];
-        
+
         try {
           const { error } = await supabase
             .from('students')

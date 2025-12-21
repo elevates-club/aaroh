@@ -4,7 +4,18 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Palette, Calendar, MapPin, Users, Clock, Search, Filter, Loader2, Download, Edit, Layout, Layers } from 'lucide-react';
+import { Palette, Calendar, MapPin, Users, Clock, Search, Filter, Loader2, Download, Edit, Layout, Layers, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRole } from '@/contexts/RoleContext';
@@ -46,9 +57,29 @@ export default function Events() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [pdfDownloadingId, setPdfDownloadingId] = useState<string | null>(null);
 
+  const [globalRegistrationOpen, setGlobalRegistrationOpen] = useState(true);
+
   useEffect(() => {
     fetchEvents();
+    fetchGlobalSettings();
   }, []);
+
+  const fetchGlobalSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'global_registration_open')
+        .single();
+
+      if (data) {
+        const val = data.value as any;
+        setGlobalRegistrationOpen(val?.enabled !== false);
+      }
+    } catch (error) {
+      console.error("Error fetching global settings:", error);
+    }
+  };
 
   const fetchEvents = async () => {
     try {
@@ -88,7 +119,7 @@ export default function Events() {
     try {
       setPdfDownloadingId(event.id);
       const { generateEventParticipantsPDF } = await import('@/utils/pdfGeneratorV2');
-      await generateEventParticipantsPDF(event as any, profile?.role);
+      await generateEventParticipantsPDF(event as any, activeRole);
       toast({
         title: 'PDF Downloaded',
         description: `Participants list for ${event.name} has been downloaded.`,
@@ -102,6 +133,30 @@ export default function Events() {
       });
     } finally {
       setPdfDownloadingId(null);
+    }
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    try {
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', eventId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Event Deleted',
+        description: 'The event has been successfully removed.',
+      });
+      fetchEvents();
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete event',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -229,16 +284,41 @@ export default function Events() {
                         </Badge>
                       </div>
                     </div>
+
                     {(hasRole(activeRole, USER_ROLES.ADMIN) || hasRole(activeRole, USER_ROLES.EVENT_MANAGER)) && (
-                      <EditEventDialog
-                        event={event}
-                        onEventUpdated={handleEventUpdate}
-                        trigger={
-                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        }
-                      />
+                      <div className="flex gap-1">
+                        <EditEventDialog
+                          event={event}
+                          onEventUpdated={handleEventUpdate}
+                          trigger={
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-primary/10 hover:text-primary">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          }
+                        />
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the event
+                                and remove all associated data.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteEvent(event.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                Delete Event
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     )}
                   </div>
 
@@ -270,7 +350,7 @@ export default function Events() {
                     )}
 
                     <div className="mt-4 flex gap-2">
-                      {isRegistrationOpen(event.registration_deadline) ? (
+                      {isRegistrationOpen(event.registration_deadline) && globalRegistrationOpen ? (
                         hasRole(activeRole, USER_ROLES.STUDENT) ? (
                           <StudentSelfRegistrationDialog
                             event={event as any}
@@ -283,7 +363,9 @@ export default function Events() {
                           />
                         )
                       ) : (
-                        <Button disabled className="w-full opacity-50">Registration Closed</Button>
+                        <Button disabled className="w-full opacity-50">
+                          {!globalRegistrationOpen ? "Registrations Closed" : "Registration Closed"}
+                        </Button>
                       )}
 
                       {!hasRole(activeRole, USER_ROLES.STUDENT) && (

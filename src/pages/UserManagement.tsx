@@ -91,14 +91,25 @@ export default function UserManagement() {
                 throw new Error("Insufficient permissions: Event Managers cannot create Admin accounts.");
             }
 
+            // Call Admin RPC to create user securely
+            const { data, error } = await supabase.rpc('create_user_by_admin' as any, {
+                email: formData.email,
+                password: formData.password,
+                full_name: formData.full_name,
+                role: formData.roles[0]
+            }) as { data: any, error: any };
+
+            if (error) throw error;
+            if (data && data.error) throw new Error(data.error);
+
             toast({
-                title: 'Note',
-                description: 'Full user creation requires admin SDK. Please use the signup page or admin scripts.',
-                variant: 'destructive',
+                title: 'Success',
+                description: 'User created successfully.',
             });
 
             setShowAddDialog(false);
             resetForm();
+            fetchUsers();
         } catch (error: any) {
             console.error('Error adding user:', error);
             toast({
@@ -165,16 +176,17 @@ export default function UserManagement() {
         try {
             setLoading(true);
 
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .delete()
-                .eq('id', selectedUser.id);
+            // Call Admin RPC to delete user securely (removes auth + profile + logs)
+            const { data, error } = await supabase.rpc('delete_user_by_admin' as any, {
+                target_user_id: selectedUser.id
+            }) as { data: any, error: any };
 
-            if (profileError) throw profileError;
+            if (error) throw error;
+            if (data && data.error) throw new Error(data.error);
 
             toast({
                 title: 'Success',
-                description: 'User profile deleted. Auth account requires manual deletion.',
+                description: 'User account and profile deleted successfully.',
             });
 
             setShowDeleteDialog(false);

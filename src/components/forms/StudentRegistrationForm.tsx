@@ -113,15 +113,25 @@ export function StudentRegistrationForm({ event, onSuccess, onCancel }: StudentR
   };
 
   const fetchStudents = async () => {
+    // Admins have their own view/notice, so we skip fetching here if needed, 
+    // but Event Managers DO use this form and need data.
     if (hasRole(activeRole, USER_ROLES.ADMIN)) return;
 
-    const year = getCoordinatorYear(activeRole) as 'first' | 'second' | 'third' | 'fourth';
-
-    const { data, error } = await supabase
+    let query = supabase
       .from('students')
       .select('*')
-      .eq('year', year)
       .order('name');
+
+    // If NOT an Event Manager, we assume it's a Coordinator and filter by their year.
+    // Event Managers see ALL students.
+    if (!hasRole(activeRole, USER_ROLES.EVENT_MANAGER)) {
+      const year = getCoordinatorYear(activeRole) as 'first' | 'second' | 'third' | 'fourth';
+      if (year) {
+        query = query.eq('year', year);
+      }
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
     setStudents(data || []);
@@ -516,7 +526,7 @@ export function StudentRegistrationForm({ event, onSuccess, onCancel }: StudentR
             {filteredStudents.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>{searchTerm ? 'No students match your search.' : 'No students found in your year.'}</p>
+                <p>{searchTerm ? 'No students match your search.' : 'No students found.'}</p>
               </div>
             ) : (
               filteredStudents.map((student) => {

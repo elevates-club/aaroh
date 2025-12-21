@@ -41,12 +41,12 @@ export default function EventSettings() {
             if (data) {
                 const newSettings = { ...settings };
                 data.forEach(s => {
-                    const val = String(s.value);
-                    if (s.key === 'auto_approve_registrations') newSettings.autoApproveRegistrations = val === 'true';
-                    if (s.key === 'max_on_stage_registrations') newSettings.maxOnStageRegistrations = parseInt(val) || 5;
-                    if (s.key === 'max_off_stage_registrations') newSettings.maxOffStageRegistrations = parseInt(val) || 5;
-                    if (s.key === 'registration_deadline_days') newSettings.registrationDeadlineDays = parseInt(val) || 2;
-                    if (s.key === 'global_registration_open') newSettings.globalRegistrationOpen = val === 'true';
+                    const val = s.value as any; // Cast to any to safely access properties if object
+                    if (s.key === 'auto_approve_registrations') newSettings.autoApproveRegistrations = val?.enabled === true;
+                    if (s.key === 'max_on_stage_registrations') newSettings.maxOnStageRegistrations = val?.limit || 5;
+                    if (s.key === 'max_off_stage_registrations') newSettings.maxOffStageRegistrations = val?.limit || 5;
+                    if (s.key === 'registration_deadline_days') newSettings.registrationDeadlineDays = val?.days || 2;
+                    if (s.key === 'global_registration_open') newSettings.globalRegistrationOpen = val?.enabled !== false;
                 });
                 setSettings(newSettings);
             }
@@ -66,11 +66,11 @@ export default function EventSettings() {
         try {
             setSaving(true);
             const settingsToSave = [
-                { key: 'auto_approve_registrations', value: String(settings.autoApproveRegistrations), updated_by: user?.id },
-                { key: 'max_on_stage_registrations', value: String(settings.maxOnStageRegistrations), updated_by: user?.id },
-                { key: 'max_off_stage_registrations', value: String(settings.maxOffStageRegistrations), updated_by: user?.id },
-                { key: 'registration_deadline_days', value: String(settings.registrationDeadlineDays), updated_by: user?.id },
-                { key: 'global_registration_open', value: String(settings.globalRegistrationOpen), updated_by: user?.id },
+                { key: 'auto_approve_registrations', value: { enabled: settings.autoApproveRegistrations }, updated_by: user?.id },
+                { key: 'max_on_stage_registrations', value: { limit: settings.maxOnStageRegistrations }, updated_by: user?.id },
+                { key: 'max_off_stage_registrations', value: { limit: settings.maxOffStageRegistrations }, updated_by: user?.id },
+                { key: 'registration_deadline_days', value: { days: settings.registrationDeadlineDays }, updated_by: user?.id },
+                { key: 'global_registration_open', value: { enabled: settings.globalRegistrationOpen }, updated_by: user?.id },
             ];
 
             const { error } = await supabase
@@ -107,7 +107,7 @@ export default function EventSettings() {
                 .from('settings')
                 .upsert({
                     key: 'global_registration_open',
-                    value: String(newValue),
+                    value: { enabled: newValue },
                     updated_by: user?.id
                 }, { onConflict: 'key' });
 
@@ -211,7 +211,7 @@ export default function EventSettings() {
                             <SlidersHorizontal className="h-6 w-6" />
                         </div>
                         <div>
-                            <h3 className="text-xl font-bold text-foreground">Participation Limits</h3>
+                            <h3 className="text-xl font-bold text-foreground">Registration Limits</h3>
                             <p className="text-sm font-medium text-muted-foreground">Define maximum engagements per student</p>
                         </div>
                     </div>
@@ -222,23 +222,14 @@ export default function EventSettings() {
                                 <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">On-Stage Max</Label>
                                 <span className="text-2xl font-black text-primary">{settings.maxOnStageRegistrations}</span>
                             </div>
-                            <div className="relative">
-                                <Input
-                                    type="number"
-                                    value={settings.maxOnStageRegistrations}
-                                    onChange={(e) => setSettings(prev => ({ ...prev, maxOnStageRegistrations: parseInt(e.target.value) || 0 }))}
-                                    className="h-2 bg-muted border-none rounded-full text-transparent selection:text-transparent focus:ring-0 cursor-pointer w-full absolute top-0 opacity-0 z-10"
-                                />
-                                {/* Custom slider visual can go here if needed, for now Input works but is hidden for custom styling or just standard input */}
-                                <Input
-                                    type="range"
-                                    min="0"
-                                    max="10"
-                                    value={settings.maxOnStageRegistrations}
-                                    onChange={(e) => setSettings(prev => ({ ...prev, maxOnStageRegistrations: parseInt(e.target.value) || 0 }))}
-                                    className="w-full accent-primary h-2 bg-muted rounded-lg appearance-none cursor-pointer"
-                                />
-                            </div>
+                            <Input
+                                type="range"
+                                min="0"
+                                max="10"
+                                value={settings.maxOnStageRegistrations}
+                                onChange={(e) => setSettings(prev => ({ ...prev, maxOnStageRegistrations: parseInt(e.target.value) || 0 }))}
+                                className="w-full accent-primary h-2 bg-muted rounded-lg appearance-none cursor-pointer"
+                            />
                         </div>
 
                         <div className="space-y-4">
@@ -267,20 +258,20 @@ export default function EventSettings() {
                             <Clock className="h-6 w-6" />
                         </div>
                         <div className="text-right">
-                            <p className="text-[10px] uppercase font-bold tracking-widest opacity-50 text-white">Global Cutoff</p>
+                            <p className="text-[10px] uppercase font-bold tracking-widest opacity-50 text-white">Registration Deadline</p>
                             <p className="text-4xl font-black text-white">{settings.registrationDeadlineDays} <span className="text-lg font-bold opacity-50">Days</span></p>
                         </div>
                     </div>
 
                     <div className="relative z-10 space-y-4">
-                        <Label className="text-xs font-bold uppercase tracking-wider text-white/60">Registration Buffer</Label>
+                        <Label className="text-xs font-bold uppercase tracking-wider text-white/60">Days Before Event</Label>
                         <Input
                             type="number"
                             value={settings.registrationDeadlineDays}
                             onChange={(e) => setSettings(prev => ({ ...prev, registrationDeadlineDays: parseInt(e.target.value) || 0 }))}
                             className="bg-white/10 border-white/10 text-white placeholder:text-white/20 h-12 rounded-xl font-bold focus-visible:ring-offset-0 focus-visible:ring-white/20"
                         />
-                        <p className="text-[10px] text-white/40">Days before event date to close registration.</p>
+                        <p className="text-[10px] text-white/40">Number of days before event to close registration.</p>
                     </div>
                 </Card>
 
@@ -291,13 +282,13 @@ export default function EventSettings() {
                             {settings.globalRegistrationOpen ? <CheckCircle className="h-6 w-6" /> : <Ban className="h-6 w-6" />}
                         </div>
                         <Badge variant={settings.globalRegistrationOpen ? "default" : "destructive"} className="px-4 py-1.5 uppercase font-black tracking-widest text-[10px]">
-                            {settings.globalRegistrationOpen ? "System Online" : "System Lockdown"}
+                            {settings.globalRegistrationOpen ? "System Online" : "System Paused"}
                         </Badge>
                     </div>
 
                     <div className="space-y-2">
-                        <h3 className="text-xl font-black text-foreground">Global Kill Switch</h3>
-                        <p className="text-sm font-medium text-muted-foreground">Instantly halt all registration activity across the entire platform.</p>
+                        <h3 className="text-xl font-black text-foreground">System Control</h3>
+                        <p className="text-sm font-medium text-muted-foreground">Pause or resume all registration activity.</p>
                     </div>
 
                     <Button
@@ -305,7 +296,7 @@ export default function EventSettings() {
                         variant={settings.globalRegistrationOpen ? "outline" : "destructive"}
                         className="w-full h-12 rounded-xl border-2 font-bold uppercase tracking-wider"
                     >
-                        {settings.globalRegistrationOpen ? "Initiate Lockdown" : "Restore Systems"}
+                        {settings.globalRegistrationOpen ? "Pause Registrations" : "Resume Registrations"}
                     </Button>
                 </Card>
 

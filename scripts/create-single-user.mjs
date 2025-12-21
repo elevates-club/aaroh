@@ -40,12 +40,14 @@ async function createSingleUser(rollNumber) {
         console.log(`✅ Found Student in DB: ${student.name}`);
     }
 
-    const name = student ? student.name : 'Test Student';
+    // Explicit override for this specific request if student not found in DB
+    const name = student ? student.name : 'SARHAN QADIR KVM';
     const email = `noreply-${rollNumber.toUpperCase()}@ekc.edu.in`; // AuthContext uses UPPERCASE logic for email generation
     const password = lcRoll;
 
     console.log(`\nCreating Auth User...`);
     console.log(`   Email: ${email}`);
+    console.log(`   Name: ${name}`);
     console.log(`   Password: ${password}`);
 
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
@@ -56,7 +58,8 @@ async function createSingleUser(rollNumber) {
             roll_number: rollNumber.toUpperCase(),
             name: name,
             full_name: name,
-            is_student: true
+            is_student: true,
+            role: 'student' // Explicitly set role for new trigger
         }
     });
 
@@ -73,17 +76,26 @@ async function createSingleUser(rollNumber) {
                 console.log(`   Found existing user ID: ${existingUser.id}`);
                 const { error: updateError } = await supabase.auth.admin.updateUserById(
                     existingUser.id,
-                    { password: password }
+                    {
+                        password: password,
+                        user_metadata: {
+                            roll_number: rollNumber.toUpperCase(),
+                            name: name,
+                            full_name: name,
+                            is_student: true,
+                            role: 'student'
+                        }
+                    }
                 );
 
                 if (updateError) {
-                    console.error('❌ Password Update Failed:', updateError.message);
+                    console.error('❌ Update Failed:', updateError.message);
                 } else {
-                    console.log('✅ Password Updated Successfully!');
+                    console.log('✅ User Updated Successfully!');
 
                     // Force link to student record
                     if (student) {
-                        console.log('   Ensuring link to student record...');
+                        console.log('   Linking to student record...');
                         const { error: linkError } = await supabase
                             .from('students')
                             .update({ user_id: existingUser.id })
@@ -117,4 +129,4 @@ async function createSingleUser(rollNumber) {
     }
 }
 
-createSingleUser('ekc22cs051');
+createSingleUser('EKC22CS051');

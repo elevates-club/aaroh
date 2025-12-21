@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuLabel, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Download, FileText, Loader2, Users, Palette } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,7 +17,7 @@ import { useRole } from '@/contexts/RoleContext';
 import { USER_ROLES, ACADEMIC_YEARS } from '@/lib/constants';
 import { hasRole, getCoordinatorYear } from '@/lib/roleUtils';
 import { toast } from '@/hooks/use-toast';
-import { 
+import {
   generateAdminAllRegistrationsPDF,
   generateAdminYearWiseRegistrationsPDF,
   generateCoordinatorRegistrationsPDF,
@@ -51,7 +51,7 @@ export function PDFDownloadButton({ variant = 'button', className }: PDFDownload
         ),
         event:events!inner(
           name,
-          type,
+          category,
           venue,
           event_date
         )
@@ -76,7 +76,7 @@ export function PDFDownloadButton({ variant = 'button', className }: PDFDownload
       department: item.student.department,
       year: item.student.year,
       event_name: item.event.name,
-      event_type: item.event.type,
+      category: item.event.category,
       venue: item.event.venue,
       event_date: item.event.event_date,
       registration_date: item.created_at,
@@ -88,7 +88,7 @@ export function PDFDownloadButton({ variant = 'button', className }: PDFDownload
     try {
       setLoading(true);
       const data = await fetchRegistrationData();
-      
+
       if (data.length === 0) {
         toast({
           title: 'No Data',
@@ -99,7 +99,7 @@ export function PDFDownloadButton({ variant = 'button', className }: PDFDownload
       }
 
       await generateAdminAllRegistrationsPDF(data);
-      
+
       toast({
         title: 'Success',
         description: `Downloaded ${data.length} registrations as PDF`,
@@ -120,7 +120,7 @@ export function PDFDownloadButton({ variant = 'button', className }: PDFDownload
     try {
       setLoading(true);
       const data = await fetchRegistrationData(year);
-      
+
       if (data.length === 0) {
         toast({
           title: 'No Data',
@@ -131,7 +131,7 @@ export function PDFDownloadButton({ variant = 'button', className }: PDFDownload
       }
 
       await generateAdminYearWiseRegistrationsPDF(data, year);
-      
+
       toast({
         title: 'Success',
         description: `Downloaded ${data.length} ${year} year registrations as PDF`,
@@ -152,7 +152,7 @@ export function PDFDownloadButton({ variant = 'button', className }: PDFDownload
     try {
       setLoading(true);
       const data = await fetchRegistrationData();
-      
+
       if (data.length === 0) {
         toast({
           title: 'No Data',
@@ -164,7 +164,7 @@ export function PDFDownloadButton({ variant = 'button', className }: PDFDownload
 
       const coordinatorYear = getCoordinatorYear(activeRole) as string;
       await generateCoordinatorRegistrationsPDF(data, coordinatorYear);
-      
+
       toast({
         title: 'Success',
         description: `Downloaded ${data.length} student registrations as PDF`,
@@ -185,7 +185,7 @@ export function PDFDownloadButton({ variant = 'button', className }: PDFDownload
     try {
       setLoading(true);
       const data = await fetchRegistrationData(selectedYear !== 'all' ? selectedYear : undefined);
-      
+
       if (data.length === 0) {
         toast({
           title: 'No Data',
@@ -209,7 +209,7 @@ export function PDFDownloadButton({ variant = 'button', className }: PDFDownload
       const filename = selectedYear === 'all' ? 'event-wise-registrations' : `${selectedYear}-year-event-wise`;
 
       await generateEventWiseRegistrationsPDF(registrationsByEvent, title, filename);
-      
+
       toast({
         title: 'Success',
         description: `Downloaded event-wise registrations as PDF`,
@@ -235,7 +235,7 @@ export function PDFDownloadButton({ variant = 'button', className }: PDFDownload
             Download Reports
           </CardTitle>
           <CardDescription>
-            {hasRole(activeRole, USER_ROLES.ADMIN) 
+            {hasRole(activeRole, USER_ROLES.ADMIN)
               ? 'Generate PDF reports for all registrations or filter by year'
               : 'Download your students\' registration details'
             }
@@ -325,7 +325,7 @@ export function PDFDownloadButton({ variant = 'button', className }: PDFDownload
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Download Options</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          
+
           {hasRole(activeRole, USER_ROLES.ADMIN) ? (
             <>
               <DropdownMenuItem onClick={handleDownloadAll}>

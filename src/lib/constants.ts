@@ -40,6 +40,8 @@ export const getRoleLabel = (role: string) => {
   switch (role) {
     case USER_ROLES.ADMIN:
       return 'Administrator';
+    case USER_ROLES.EVENT_MANAGER:
+      return 'Event Manager';
     case USER_ROLES.FIRST_YEAR_COORDINATOR:
       return 'First Year Coordinator';
     case USER_ROLES.SECOND_YEAR_COORDINATOR:

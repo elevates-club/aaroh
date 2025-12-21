@@ -13,13 +13,31 @@ import {
     Calendar,
     Shield,
     Save,
-    Loader2
+    Loader2,
+    Lock,
+    Users
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { getRoleLabel, getYearLabel, ACADEMIC_YEARS } from '@/lib/constants';
+import { getRoleLabel, ACADEMIC_YEARS } from '@/lib/constants';
 import { format } from 'date-fns';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogFooter,
+} from '@/components/ui/dialog';
 
 export default function Profile() {
     const { user, profile } = useAuth();
@@ -29,13 +47,28 @@ export default function Profile() {
         department: string;
         year: string;
         created_at: string;
+        gender?: string;
+        phone_number?: string;
     } | null>(null);
+
     const [editing, setEditing] = useState(false);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+
+    // Form Data
     const [formData, setFormData] = useState({
         phone: '',
+        gender: '',
+        email: '',
     });
+
+    // Password Change State
+    const [passwordOpen, setPasswordOpen] = useState(false);
+    const [passwordData, setPasswordData] = useState({
+        newPassword: '',
+        confirmPassword: '',
+    });
+    const [changingPassword, setChangingPassword] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -45,7 +78,6 @@ export default function Profile() {
         if (!user?.id) return;
         setLoading(true);
 
-        // Fetch student data (includes phone_number)
         const { data: student } = await supabase
             .from('students')
             .select('*')
@@ -56,106 +88,225 @@ export default function Profile() {
             setStudentData(student);
             setFormData({
                 phone: student.phone_number || '',
+                gender: student.gender || '',
+                email: profile?.email || user.email || '',
+            });
+        } else {
+            // Fallback for non-students (e.g. admins)
+            setFormData({
+                phone: '',
+                gender: '',
+                email: profile?.email || user.email || '',
             });
         }
 
         setLoading(false);
     };
 
-    const handleSave = async () => {
-        if (!user?.id || !studentData) return;
+    const handleSaveProfile = async () => {
+        if (!user?.id) return;
         setSaving(true);
 
-        const { error } = await supabase
-            .from('students')
-            .update({ phone_number: formData.phone })
-            .eq('user_id', user.id);
+        try {
+            // 1. Update Student Details (Phone, Gender)
+            if (studentData) {
+                const { error: studentError } = await supabase
+                    .from('students')
+                    .update({
+                        phone_number: formData.phone,
+                        gender: formData.gender
+                    })
+                    .eq('user_id', user.id);
 
-        if (error) {
-            toast({
-                title: 'Error',
-                description: 'Failed to update profile',
-                variant: 'destructive',
-            });
-        } else {
+                if (studentError) throw studentError;
+            }
+
+            // 2. Update Email if changed
+            if (formData.email !== (profile?.email || user.email)) {
+                const { data: rpcData, error: rpcError } = await supabase
+                    .rpc('update_student_auth_email', {
+                        p_user_id: user.id,
+                        p_new_email: formData.email
+                    });
+
+                if (rpcError) throw rpcError;
+
+                const result = rpcData as any;
+                if (!result.success) {
+                    throw new Error(result.message);
+                }
+
+                // Sync profiles table
+                await supabase
+                    .from('profiles')
+                    .update({ email: formData.email })
+                    .eq('id', user.id);
+            }
+
             toast({
                 title: 'Success',
                 description: 'Profile updated successfully',
             });
             setEditing(false);
+            fetchData(); // Refresh data
+
+        } catch (error: any) {
+            console.error('Update error:', error);
+            toast({
+                title: 'Error',
+                description: error.message || 'Failed to update profile',
+                variant: 'destructive',
+            });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleChangePassword = async () => {
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+            toast({
+                title: 'Error',
+                description: 'Passwords do not match',
+                variant: 'destructive',
+            });
+            return;
         }
 
-        setSaving(false);
+        if (passwordData.newPassword.length < 6) {
+            toast({
+                title: 'Error',
+                description: 'Password must be at least 6 characters',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        setChangingPassword(true);
+        try {
+            const { error } = await supabase.auth.updateUser({
+                password: passwordData.newPassword
+            });
+
+            if (error) throw error;
+
+            toast({
+                title: 'Success',
+                description: 'Password updated successfully',
+            });
+            setPasswordOpen(false);
+            setPasswordData({ newPassword: '', confirmPassword: '' });
+
+        } catch (error: any) {
+            toast({
+                title: 'Error',
+                description: error.message || 'Failed to update password',
+                variant: 'destructive',
+            });
+        } finally {
+            setChangingPassword(false);
+        }
     };
 
     const getRoleColor = (role: string) => {
-        if (role === 'admin') return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
-        if (role === 'student') return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
+        if (role === 'admin') return 'bg-red-500/10 text-red-600 border-red-200/50';
+        if (role === 'event_manager') return 'bg-orange-500/10 text-orange-600 border-orange-200/50';
+        if (role === 'coordinator') return 'bg-purple-500/10 text-purple-600 border-purple-200/50';
+        return 'bg-blue-500/10 text-blue-600 border-blue-200/50';
     };
 
     if (loading) {
         return (
             <div className="p-6 flex items-center justify-center min-h-[400px]">
-                <Loader2 className="h-8 w-8 animate-spin" />
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
         );
     }
 
     return (
-        <div className="p-6 space-y-6 max-w-3xl mx-auto">
+        <div className="p-4 md:p-6 space-y-6 max-w-4xl mx-auto pb-20">
             <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                     My Profile
                 </h1>
-                <p className="text-muted-foreground mt-1">View and manage your profile information</p>
+                <p className="text-muted-foreground mt-1 text-sm md:text-base">Manage your personal information and account security</p>
             </div>
 
-            {/* Profile Card */}
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-2xl font-bold">
+            <div className="grid gap-6">
+                {/* Identity Card */}
+                <Card>
+                    <CardHeader className="pb-4">
+                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
+                            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-primary text-3xl font-bold shrink-0">
                                 {profile?.full_name?.charAt(0) || 'U'}
                             </div>
-                            <div>
-                                <CardTitle className="text-xl">{profile?.full_name}</CardTitle>
-                                <CardDescription className="flex flex-wrap gap-2 mt-2">
-                                    {Array.isArray(profile?.role) ? (
-                                        profile.role.map(r => (
-                                            <Badge key={r} className={getRoleColor(r)}>{getRoleLabel(r)}</Badge>
-                                        ))
-                                    ) : (
-                                        <Badge className={getRoleColor(profile?.role || '')}>{getRoleLabel(profile?.role || '')}</Badge>
-                                    )}
-                                </CardDescription>
+                            <div className="flex-1 space-y-2">
+                                <div>
+                                    <CardTitle className="text-xl md:text-2xl">{profile?.full_name}</CardTitle>
+                                    <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-2">
+                                        {Array.isArray(profile?.role) ? (
+                                            profile.role.map(r => (
+                                                <Badge key={r} variant="outline" className={getRoleColor(r)}>{getRoleLabel(r)}</Badge>
+                                            ))
+                                        ) : (
+                                            <Badge variant="outline" className={getRoleColor(profile?.role || '')}>{getRoleLabel(profile?.role || '')}</Badge>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
+                            {!editing && (
+                                <Button onClick={() => setEditing(true)} className="w-full sm:w-auto">
+                                    Edit Profile
+                                </Button>
+                            )}
                         </div>
-                        {!editing && (
-                            <Button variant="outline" onClick={() => setEditing(true)}>
-                                Edit Profile
-                            </Button>
-                        )}
-                    </div>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    {/* Account Information */}
-                    <div className="space-y-4">
-                        <h3 className="font-semibold flex items-center gap-2">
-                            <Shield className="h-4 w-4" />
-                            Account Information
-                        </h3>
-                        <div className="grid gap-4 md:grid-cols-2">
+                    </CardHeader>
+                </Card>
+
+                {/* Personal Information */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                            <User className="h-5 w-5 text-primary" />
+                            Personal Details
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="grid gap-6 md:grid-cols-2">
+                            {/* Read Only Fields */}
                             <div className="space-y-2">
-                                <Label className="text-muted-foreground flex items-center gap-2">
-                                    <Mail className="h-3 w-3" /> Email
-                                </Label>
-                                <p className="font-medium">{profile?.email || user?.email}</p>
+                                <Label className="text-muted-foreground text-xs uppercase tracking-wider">Full Name</Label>
+                                <div className="p-2.5 bg-muted/50 rounded-md font-medium border border-transparent">
+                                    {profile?.full_name}
+                                </div>
                             </div>
+
+                            {studentData && (
+                                <>
+                                    <div className="space-y-2">
+                                        <Label className="text-muted-foreground text-xs uppercase tracking-wider">Register Number</Label>
+                                        <div className="p-2.5 bg-muted/50 rounded-md font-medium border border-transparent font-mono">
+                                            {studentData.roll_number}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-muted-foreground text-xs uppercase tracking-wider">Department</Label>
+                                        <div className="p-2.5 bg-muted/50 rounded-md font-medium border border-transparent">
+                                            {studentData.department}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-muted-foreground text-xs uppercase tracking-wider">Academic Year</Label>
+                                        <div className="p-2.5 bg-muted/50 rounded-md font-medium border border-transparent">
+                                            {ACADEMIC_YEARS[studentData.year as keyof typeof ACADEMIC_YEARS] || studentData.year}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Editable Fields */}
                             <div className="space-y-2">
-                                <Label className="text-muted-foreground flex items-center gap-2">
-                                    <Phone className="h-3 w-3" /> Phone
+                                <Label className="text-xs uppercase tracking-wider flex items-center gap-2">
+                                    <Phone className="h-3 w-3" /> Phone Number
                                 </Label>
                                 {editing ? (
                                     <Input
@@ -164,64 +315,141 @@ export default function Profile() {
                                         placeholder="Enter phone number"
                                     />
                                 ) : (
-                                    <p className="font-medium">{formData.phone || 'Not set'}</p>
+                                    <div className="p-2.5 rounded-md font-medium border border-border/50">
+                                        {formData.phone || 'Not set'}
+                                    </div>
                                 )}
                             </div>
-                        </div>
-                    </div>
 
-                    {/* Student Information */}
-                    {studentData && (
-                        <div className="space-y-4 pt-4 border-t">
-                            <h3 className="font-semibold flex items-center gap-2">
-                                <GraduationCap className="h-4 w-4" />
-                                Student Information
-                            </h3>
-                            <div className="grid gap-4 md:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label className="text-muted-foreground">Roll Number</Label>
-                                    <p className="font-medium font-mono">{studentData.roll_number}</p>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-muted-foreground flex items-center gap-2">
-                                        <Building className="h-3 w-3" /> Department
-                                    </Label>
-                                    <p className="font-medium">{studentData.department}</p>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-muted-foreground flex items-center gap-2">
-                                        <Calendar className="h-3 w-3" /> Academic Year
-                                    </Label>
-                                    <Badge variant="outline">
-                                        {ACADEMIC_YEARS[studentData.year as keyof typeof ACADEMIC_YEARS] || studentData.year}
-                                    </Badge>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-muted-foreground">Member Since</Label>
-                                    <p className="font-medium">{format(new Date(studentData.created_at), 'MMMM dd, yyyy')}</p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Save Button */}
-                    {editing && (
-                        <div className="flex justify-end gap-2 pt-4 border-t">
-                            <Button variant="outline" onClick={() => setEditing(false)}>
-                                Cancel
-                            </Button>
-                            <Button onClick={handleSave} disabled={saving}>
-                                {saving ? (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            <div className="space-y-2">
+                                <Label className="text-xs uppercase tracking-wider flex items-center gap-2">
+                                    <Users className="h-3 w-3" /> Gender
+                                </Label>
+                                {editing ? (
+                                    <Select
+                                        value={formData.gender}
+                                        onValueChange={(val) => setFormData({ ...formData, gender: val })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select gender" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Male">Male</SelectItem>
+                                            <SelectItem value="Female">Female</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 ) : (
-                                    <Save className="mr-2 h-4 w-4" />
+                                    <div className="p-2.5 rounded-md font-medium border border-border/50">
+                                        {formData.gender || 'Not set'}
+                                    </div>
                                 )}
-                                Save Changes
-                            </Button>
+                            </div>
                         </div>
-                    )}
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
+
+                {/* Account Security */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                            <Shield className="h-5 w-5 text-primary" />
+                            Account Security
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="grid gap-6 md:grid-cols-2">
+                            <div className="space-y-2 md:col-span-2">
+                                <Label className="text-xs uppercase tracking-wider flex items-center gap-2">
+                                    <Mail className="h-3 w-3" /> Email Address
+                                </Label>
+                                {editing ? (
+                                    <Input
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        placeholder="Enter email address"
+                                        className="max-w-md"
+                                    />
+                                ) : (
+                                    <div className="p-2.5 rounded-md font-medium border border-border/50">
+                                        {formData.email}
+                                    </div>
+                                )}
+                                <p className="text-xs text-muted-foreground">
+                                    Used for login and notifications. {editing && "Changing this will update your login credentials."}
+                                </p>
+                            </div>
+
+                            <div className="md:col-span-2 pt-2 border-t">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h4 className="font-medium">Password</h4>
+                                        <p className="text-sm text-muted-foreground">Ensure your account is secure with a strong password</p>
+                                    </div>
+                                    <Dialog open={passwordOpen} onOpenChange={setPasswordOpen}>
+                                        <DialogTrigger asChild>
+                                            <Button variant="outline" size="sm">
+                                                <Lock className="mr-2 h-4 w-4" />
+                                                Change Password
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                            <DialogHeader>
+                                                <DialogTitle>Change Password</DialogTitle>
+                                                <DialogDescription>
+                                                    Enter a new password for your account. It must be at least 6 characters.
+                                                </DialogDescription>
+                                            </DialogHeader>
+                                            <div className="space-y-4 py-4">
+                                                <div className="space-y-2">
+                                                    <Label>New Password</Label>
+                                                    <Input
+                                                        type="password"
+                                                        value={passwordData.newPassword}
+                                                        onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                                                        placeholder="••••••••"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label>Confirm Password</Label>
+                                                    <Input
+                                                        type="password"
+                                                        value={passwordData.confirmPassword}
+                                                        onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                                                        placeholder="••••••••"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <DialogFooter>
+                                                <Button variant="outline" onClick={() => setPasswordOpen(false)}>Cancel</Button>
+                                                <Button onClick={handleChangePassword} disabled={changingPassword}>
+                                                    {changingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                    Update Password
+                                                </Button>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
+                                </div>
+                            </div>
+                        </div>
+
+                        {editing && (
+                            <div className="flex justify-end gap-3 pt-4 border-t">
+                                <Button variant="ghost" onClick={() => {
+                                    setEditing(false);
+                                    fetchData(); // Reset form
+                                }}>
+                                    Cancel
+                                </Button>
+                                <Button onClick={handleSaveProfile} disabled={saving} className="bg-gradient-to-r from-primary to-secondary">
+                                    {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    <Save className="mr-2 h-4 w-4" />
+                                    Save Changes
+                                </Button>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }

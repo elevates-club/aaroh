@@ -54,6 +54,7 @@ export function AppSidebar() {
     { title: 'Students', url: '/students', icon: Users, group: 'Data' },
     { title: 'Registrations', url: '/registrations', icon: FileText, group: 'Data' },
     { title: 'Event Settings', url: '/event-settings', icon: Settings, group: 'Tools' },
+    { title: 'Event Activity', url: '/event-activity', icon: Activity, group: 'Tools' },
   ];
 
   const coordinatorItems = [

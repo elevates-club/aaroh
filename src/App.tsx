@@ -22,6 +22,7 @@ import NotFound from "./pages/NotFound";
 import { ForcePasswordChange } from "./pages/ForcePasswordChange";
 import { ProfileSetup } from "./pages/ProfileSetup";
 import Profile from "./pages/Profile";
+import EventActivity from "./pages/EventActivity";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,7 @@ const App = () => (
                   <Route path="/my-registrations" element={<MyRegistrations />} />
                   <Route path="/event-settings" element={<EventSettings />} />
                   <Route path="/activity-logs" element={<ActivityLogs />} />
+                  <Route path="/event-activity" element={<EventActivity />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/users" element={<UserManagement />} />
                   <Route path="/profile" element={<Profile />} />

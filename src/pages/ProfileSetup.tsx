@@ -193,7 +193,7 @@ export function ProfileSetup() {
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Pre-filled fields (read-only) */}
-                    <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
                         <div className="space-y-2">
                             <Label className="text-xs text-muted-foreground">Name</Label>
                             <p className="font-medium">{studentData.name}</p>

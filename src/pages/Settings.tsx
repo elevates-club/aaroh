@@ -264,8 +264,10 @@ export default function Settings() {
               <SettingsIcon className="h-6 w-6" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-foreground">Global Thresholds</h3>
-              <p className="text-sm font-medium text-muted-foreground">Set system-wide limits for user engagement.</p>
+              <div>
+                <h3 className="text-xl font-bold text-foreground">Registration Limits</h3>
+                <p className="text-sm font-medium text-muted-foreground">Set maximum events per student.</p>
+              </div>
             </div>
           </div>
 
