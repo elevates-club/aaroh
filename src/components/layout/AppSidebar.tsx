@@ -101,7 +101,7 @@ export function AppSidebar() {
           </div>
           <div className="group-data-[collapsible=icon]:hidden">
             <h2 className="text-xl font-black tracking-tighter text-foreground flex items-center gap-1">
-              AAROH <span className="text-[#facc15]">26</span>
+              AAROH <span className="text-[#facc15]">26</span> CONSOLE
             </h2>
             <p className="text-[10px] uppercase tracking-[0.3em] font-black text-muted-foreground/50">Arts Festival</p>
           </div>

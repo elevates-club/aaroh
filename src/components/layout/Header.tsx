@@ -27,7 +27,7 @@ export function Header() {
         <SidebarTrigger />
         <div className="hidden md:block">
           <h1 className="text-xl font-black tracking-tighter text-foreground uppercase">
-            Aaroh <span className="text-[#facc15]">26</span>
+            Aaroh <span className="text-[#facc15]">26 Console</span>
           </h1>
         </div>
       </div>
