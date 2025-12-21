@@ -17,9 +17,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 224 71% 4%;
 
-    --primary: 4 76% 61%;
-    /* #E65D4F - Terracotta Orange Accent */
-    --primary-foreground: 0 0% 100%;
+    --primary: 48 96% 53%;
+    --primary-foreground: 224 71% 4%;
 
     --secondary: 210 20% 93%;
     /* Light grey secondary */
@@ -28,15 +27,15 @@
     --muted: 210 20% 96%;
     --muted-foreground: 220 8.9% 46.1%;
 
-    --accent: 4 76% 61%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 48 96% 53%;
+    --accent-foreground: 224 71% 4%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 20% 98%;
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 4 76% 61%;
+    --ring: 48 96% 53%;
 
     --radius: 2rem;
     /* 32px - Clean soft corners */
@@ -50,12 +49,12 @@
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 224 71% 4%;
-    --sidebar-primary: 4 76% 61%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-primary: 48 96% 53%;
+    --sidebar-primary-foreground: 224 71% 4%;
     --sidebar-accent: 210 20% 96%;
-    --sidebar-accent-foreground: 4 76% 61%;
+    --sidebar-accent-foreground: 48 96% 53%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 4 76% 61%;
+    --sidebar-ring: 48 96% 53%;
   }
 
   .dark {
@@ -68,8 +67,8 @@
     --popover: 224 71% 4%;
     --popover-foreground: 210 20% 98%;
 
-    --primary: 4 76% 61%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 48 96% 53%;
+    --primary-foreground: 224 71% 4%;
 
     --secondary: 215 27.9% 16.9%;
     --secondary-foreground: 210 20% 98%;
@@ -77,24 +76,24 @@
     --muted: 224 71% 8%;
     --muted-foreground: 217.9 10.6% 64.9%;
 
-    --accent: 4 76% 61%;
-    --accent-foreground: 210 20% 98%;
+    --accent: 48 96% 53%;
+    --accent-foreground: 224 71% 4%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 20% 98%;
 
     --border: 224 71% 10%;
     --input: 224 71% 10%;
-    --ring: 4 76% 61%;
+    --ring: 48 96% 53%;
 
     --sidebar-background: 224 71% 2%;
     --sidebar-foreground: 210 20% 98%;
-    --sidebar-primary: 4 76% 61%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-primary: 48 96% 53%;
+    --sidebar-primary-foreground: 224 71% 4%;
     --sidebar-accent: 224 71% 6%;
-    --sidebar-accent-foreground: 210 20% 98%;
+    --sidebar-accent-foreground: 48 96% 53%;
     --sidebar-border: 224 71% 10%;
-    --sidebar-ring: 4 76% 61%;
+    --sidebar-ring: 48 96% 53%;
   }
 }
 
@@ -149,7 +148,7 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: radial-gradient(600px circle at var(--mouse-x, 0px) var(--mouse-y, 0px), rgba(var(--primary), 0.03), transparent 60%);
+    background: radial-gradient(600px circle at var(--mouse-x, 0px) var(--mouse-y, 0px), hsla(48, 96%, 53%, 0.08), transparent 60%);
     opacity: 0;
     transition: opacity 0.8s;
   }
@@ -159,7 +158,7 @@
   }
 
   .text-gradient {
-    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+    background: linear-gradient(135deg, hsl(var(--primary)), #fde047);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -185,8 +184,8 @@
   .mesh-gradient {
     background-color: hsl(var(--background));
     background-image:
-      radial-gradient(at 0% 0%, hsla(262, 83%, 58%, 0.05) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, hsla(263, 70%, 50%, 0.05) 0px, transparent 50%);
+      radial-gradient(at 0% 0%, hsla(48, 96%, 53%, 0.05) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsla(48, 96%, 53%, 0.05) 0px, transparent 50%);
   }
 
   .bento-grid {

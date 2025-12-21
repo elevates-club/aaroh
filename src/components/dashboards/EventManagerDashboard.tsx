@@ -211,28 +211,28 @@ export function EventManagerDashboard() {
                 {/* 1. MASTER METRICS (8 Cols) */}
                 <Card className="md:col-span-8 md:row-span-2 border-none bg-primary text-primary-foreground shadow-lg shadow-primary/20 h-[380px] flex flex-col justify-between p-8 relative overflow-hidden group rounded-[2rem]">
                     {/* Decorative background */}
-                    <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/10 rounded-full blur-[100px] -mr-32 -mt-32 pointer-events-none" />
+                    <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary-foreground/10 rounded-full blur-[100px] -mr-32 -mt-32 pointer-events-none" />
 
                     <div className="relative z-10 flex justify-between items-start">
-                        <Badge className="bg-white/20 hover:bg-white/30 text-white border-none font-bold uppercase tracking-wider text-[10px]">Real-time Registrations</Badge>
-                        <Trophy className="h-6 w-6 text-white/50" />
+                        <Badge className="bg-primary-foreground/20 hover:bg-primary-foreground/30 text-primary-foreground border-none font-bold uppercase tracking-wider text-[10px]">Real-time Registrations</Badge>
+                        <Trophy className="h-6 w-6 text-primary-foreground/50" />
                     </div>
 
                     <div className="relative z-10 space-y-4">
-                        <p className="text-[8rem] font-bold tracking-tighter leading-none text-white">
+                        <p className="text-[8rem] font-bold tracking-tighter leading-none text-primary-foreground">
                             {stats.totalRegistrations.toLocaleString()}
                         </p>
-                        <p className="text-lg text-white/80 font-medium">Total Registrations</p>
+                        <p className="text-lg text-primary-foreground/80 font-medium">Total Registrations</p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-8 mt-auto relative z-10 border-t border-white/20 pt-8">
+                    <div className="grid grid-cols-2 gap-8 mt-auto relative z-10 border-t border-primary-foreground/20 pt-8">
                         <div>
-                            <p className="text-3xl font-bold text-white">{stats.pendingRegistrations}</p>
-                            <p className="text-xs text-white/60 font-semibold uppercase tracking-wider mt-1">Pending Approval</p>
+                            <p className="text-3xl font-bold text-primary-foreground">{stats.pendingRegistrations}</p>
+                            <p className="text-xs text-primary-foreground/60 font-semibold uppercase tracking-wider mt-1">Pending Approval</p>
                         </div>
                         <div>
-                            <p className="text-3xl font-bold text-white">{stats.todayRegistrations}</p>
-                            <p className="text-xs text-white/60 font-semibold uppercase tracking-wider mt-1">New Today</p>
+                            <p className="text-3xl font-bold text-primary-foreground">{stats.todayRegistrations}</p>
+                            <p className="text-xs text-primary-foreground/60 font-semibold uppercase tracking-wider mt-1">New Today</p>
                         </div>
                     </div>
                 </Card>

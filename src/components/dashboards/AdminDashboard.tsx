@@ -248,17 +248,17 @@ export function AdminDashboard() {
 
                 <Card className="md:col-span-3 border-none bg-primary text-primary-foreground shadow-lg shadow-primary/20 h-[180px] flex flex-col justify-between p-6 relative overflow-hidden group rounded-[2rem]">
                     {/* Decorative circle */}
-                    <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-white/20 blur-2xl group-hover:bg-white/30 transition-colors" />
+                    <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-primary-foreground/20 blur-2xl group-hover:bg-primary-foreground/30 transition-colors" />
 
                     <div className="flex justify-between items-start relative z-10">
-                        <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                            <Clock className="h-5 w-5 text-white" />
+                        <div className="h-10 w-10 rounded-full bg-primary-foreground/20 flex items-center justify-center backdrop-blur-sm">
+                            <Clock className="h-5 w-5 text-primary-foreground" />
                         </div>
-                        <ArrowRight className="h-5 w-5 text-white/50 group-hover:translate-x-1 transition-transform cursor-pointer" onClick={() => navigate('/events')} />
+                        <ArrowRight className="h-5 w-5 text-primary-foreground/50 group-hover:translate-x-1 transition-transform cursor-pointer" onClick={() => navigate('/events')} />
                     </div>
                     <div className="relative z-10">
-                        <p className="text-4xl font-extrabold tracking-tight text-white">{stats.todayRegistrations}</p>
-                        <p className="text-sm font-medium text-white/80 mt-1">Captured Today</p>
+                        <p className="text-4xl font-extrabold tracking-tight text-primary-foreground">{stats.todayRegistrations}</p>
+                        <p className="text-sm font-medium text-primary-foreground/80 mt-1">Captured Today</p>
                     </div>
                 </Card>
 

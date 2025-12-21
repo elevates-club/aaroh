@@ -26,8 +26,8 @@ export function Header() {
       <div className="flex items-center gap-4">
         <SidebarTrigger />
         <div className="hidden md:block">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Events Management System
+          <h1 className="text-xl font-black tracking-tighter text-foreground uppercase">
+            Aaroh <span className="text-[#facc15]">26</span>
           </h1>
         </div>
       </div>

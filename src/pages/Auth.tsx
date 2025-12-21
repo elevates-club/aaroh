@@ -103,31 +103,41 @@ export default function Auth() {
           <div className="relative z-10 space-y-8">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-background border border-border/50 shadow-sm w-fit">
               <span className="h-2 w-2 rounded-full bg-primary animate-pulse"></span>
-              <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">System v2.0</span>
+              <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">Decarto</span>
             </div>
 
-            <h1 className="text-6xl xl:text-7xl font-black tracking-tighter text-foreground leading-[0.9] text-left">
-              AAROH <br />
-              <span className="text-primary">ARTS HUB</span>
+            <h1 className="text-[8rem] xl:text-[10rem] font-black tracking-tighter text-foreground leading-[0.7] text-left">
+              <span className="text-[#facc15] text-[0.4em] block mb-2">AAROH</span>
+              26
+              <span className="text-[0.1em] block uppercase tracking-[0.5em] text-foreground/40 mt-4">Arts Fest</span>
             </h1>
 
-            <div className="h-1 w-24 bg-primary rounded-full"></div>
+            <div className="h-1.5 w-24 bg-[#facc15] rounded-full"></div>
 
-            <p className="text-xl text-muted-foreground font-medium max-w-md leading-relaxed text-left">
-              The centralized platform for event orchestration, talent management, and cultural excellence.
+            <p className="text-xl text-muted-foreground font-medium max-w-sm leading-relaxed text-left">
+              The centralized console for cultural orchestration and festival excellence.
             </p>
           </div>
 
-
-
           {/* Decorative Elements matching dashboard blobs */}
-          <div className="absolute top-[-20%] right-[-20%] w-[80%] h-[80%] bg-primary/5 rounded-full blur-[120px] pointer-events-none"></div>
-          <div className="absolute bottom-[-20%] left-[-20%] w-[60%] h-[60%] bg-orange-400/10 rounded-full blur-[100px] pointer-events-none"></div>
+          <div className="absolute top-[-20%] right-[-20%] w-[80%] h-[80%] bg-[#facc15]/5 rounded-full blur-[120px] pointer-events-none"></div>
+          <div className="absolute bottom-[-20%] left-[-20%] w-[60%] h-[60%] bg-[#facc15]/10 rounded-full blur-[100px] pointer-events-none"></div>
         </div>
 
         {/* RIGHT LOGIN FORM - Matches Dashboard Card Aesthetic */}
         <div className="flex items-center justify-center p-8 lg:p-16 relative bg-card h-full">
           <div className="w-full max-w-md space-y-10">
+            {/* Mobile Branding Header */}
+            <div className="lg:hidden text-center mb-6 space-y-2">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 w-fit mx-auto mb-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></span>
+                <span className="text-[10px] font-bold tracking-widest uppercase text-primary">Decarto</span>
+              </div>
+              <h1 className="text-4xl font-black tracking-tight text-foreground uppercase">
+                Aaroh <span className="text-[#facc15]">26</span>
+              </h1>
+            </div>
+
             <div className="text-center lg:text-left space-y-3">
               <h2 className="text-4xl font-black tracking-tight text-foreground">
                 {activeTab === 'signin' ? 'Welcome Back' : 'Get Started'}
@@ -163,7 +173,7 @@ export default function Auth() {
                       <User className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground/50" />
                       <Input
                         className="pl-12 h-12 bg-muted/30 border-border/50 focus:bg-background focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-xl transition-all font-medium"
-                        placeholder="e.g., 3529 or student@gmail.com"
+                        placeholder="e.g., EKC1234 or student@gmail.com"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       />
@@ -273,7 +283,10 @@ export default function Auth() {
 
             <div className="pt-6 border-t border-border/40 text-center">
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground/50 font-medium">
-                © 2025 Aaroh Hub · System Verified
+                © 2026 Aaroh · Powered By Decarto
+              </p>
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground/40 font-bold mt-1">
+                Developed By Elevates
               </p>
             </div>
           </div>
