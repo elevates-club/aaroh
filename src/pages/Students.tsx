@@ -101,7 +101,16 @@ export default function Students() {
         return;
       }
 
-      setStudents(data || []);
+      // Order by year: first, second, third, fourth
+      const yearOrder = { 'first': 1, 'second': 2, 'third': 3, 'fourth': 4 };
+      const sortedData = (data || []).sort((a, b) => {
+        const orderA = yearOrder[a.year as keyof typeof yearOrder] || 999;
+        const orderB = yearOrder[b.year as keyof typeof yearOrder] || 999;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.name.localeCompare(b.name);
+      });
+
+      setStudents(sortedData);
     } catch (error) {
       console.error('Error fetching students:', error);
       toast({

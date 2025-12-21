@@ -101,7 +101,7 @@ export function AppSidebar() {
           </div>
           <div className="group-data-[collapsible=icon]:hidden">
             <h2 className="text-xl font-black tracking-tighter text-foreground flex items-center gap-1">
-              AAROH <span className="text-[#facc15]">26</span> CONSOLE
+              AAROH <span className="text-[#facc15]">26</span>
             </h2>
             <p className="text-[10px] uppercase tracking-[0.3em] font-black text-muted-foreground/50">Arts Festival</p>
           </div>
@@ -178,7 +178,7 @@ export function AppSidebar() {
         {/* Brand Credits */}
         <div className="mt-6 pt-4 border-t border-border/40 group-data-[collapsible=icon]:hidden">
           <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/30 font-black text-center leading-relaxed">
-            Aaroh 26 Console <br />
+            Aaroh Console <br />
             <span className="text-primary/50">Developed By Elevates</span>
           </p>
         </div>

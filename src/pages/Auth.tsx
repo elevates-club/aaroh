@@ -134,7 +134,7 @@ export default function Auth() {
                 <span className="text-[10px] font-bold tracking-widest uppercase text-primary">Decarto</span>
               </div>
               <h1 className="text-4xl font-black tracking-tight text-foreground uppercase">
-                Aaroh <span className="text-[#facc15]">26 Console</span>
+                Aaroh <span className="text-[#facc15]">26</span>
               </h1>
             </div>
 
@@ -283,7 +283,7 @@ export default function Auth() {
 
             <div className="pt-6 border-t border-border/40 text-center">
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground/50 font-medium">
-                © 2026 Aaroh Console · Powered By Decarto
+                © 2026 Aaroh · Powered By Decarto
               </p>
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground/40 font-bold mt-1">
                 Developed By Elevates

@@ -404,8 +404,8 @@ export const generateEventParticipantsPDF = async (
       .eq('event_id', event.id)
       .eq('status', 'approved'); // Only show approved registrations
 
-    // If not admin, filter by coordinator's year
-    if (userRole && userRole !== 'admin') {
+    // If not admin or event manager, filter by coordinator's year
+    if (userRole && userRole !== 'admin' && userRole !== 'event_manager') {
       const year = userRole.replace('_coordinator', '').replace('_year', '') as 'first' | 'second' | 'third' | 'fourth';
       query = query.eq('student.year', year);
     }
@@ -434,7 +434,7 @@ export const generateEventParticipantsPDF = async (
     const generator = new PDFGeneratorV2();
 
     const title = `${event.name} - Participants List`;
-    const subtitle = userRole === 'admin'
+    const subtitle = (userRole === 'admin' || userRole === 'event_manager')
       ? 'All registered participants'
       : `${userRole?.replace('_coordinator', '').replace('_year', '')} year participants only`;
 
