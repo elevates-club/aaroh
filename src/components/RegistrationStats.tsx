@@ -12,6 +12,7 @@ import { hasRole, getCoordinatorYear } from '@/lib/roleUtils';
 import { StudentRegistrationDialog } from '@/components/forms/StudentRegistrationDialog';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { logRegistrationActivity } from '@/utils/activityLogger';
 
 interface RegistrationStatsProps {
   eventId: string;
@@ -182,6 +183,15 @@ export function RegistrationStats({ eventId, maxParticipants, className, event, 
         title: 'Registration Removed',
         description: `${studentName} has been removed from the event.`,
       });
+
+      if (profile?.id) {
+        await logRegistrationActivity(profile.id, 'registration_deleted', {
+          registration_id: registrationId,
+          student_name: studentName,
+          event_id: eventId,
+          event_name: event?.name || 'Unknown'
+        });
+      }
 
       // Refresh data
       await fetchRegistrationStats();

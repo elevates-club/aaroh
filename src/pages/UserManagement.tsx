@@ -24,6 +24,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { Users, Plus, Pencil, Trash2, Eye, Search } from 'lucide-react';
 import { USER_ROLES, getRoleLabel } from '@/lib/constants';
+import { logUserManagementActivity } from '@/utils/activityLogger';
 
 interface User {
     id: string;
@@ -107,6 +108,14 @@ export default function UserManagement() {
                 description: 'User created successfully.',
             });
 
+            if (profile?.id) {
+                await logUserManagementActivity(profile.id, 'user_created', {
+                    email: formData.email,
+                    full_name: formData.full_name,
+                    role: formData.roles[0]
+                });
+            }
+
             setShowAddDialog(false);
             resetForm();
             fetchUsers();
@@ -155,6 +164,15 @@ export default function UserManagement() {
                 description: 'User updated successfully',
             });
 
+            if (profile?.id) {
+                await logUserManagementActivity(profile.id, 'user_updated', {
+                    email: formData.email,
+                    full_name: formData.full_name,
+                    role: formData.roles,
+                    target_user_id: selectedUser.id
+                });
+            }
+
             setShowEditDialog(false);
             resetForm();
             fetchUsers();
@@ -188,6 +206,14 @@ export default function UserManagement() {
                 title: 'Success',
                 description: 'User account and profile deleted successfully.',
             });
+
+            if (profile?.id) {
+                await logUserManagementActivity(profile.id, 'user_deleted', {
+                    email: selectedUser.email,
+                    full_name: selectedUser.full_name,
+                    target_user_id: selectedUser.id
+                });
+            }
 
             setShowDeleteDialog(false);
             setSelectedUser(null);

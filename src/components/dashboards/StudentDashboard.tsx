@@ -93,6 +93,32 @@ export function StudentDashboard() {
         }
     }, [studentId]);
 
+    // Real-time subscription for settings changes
+    useEffect(() => {
+        const channel = supabase
+            .channel('settings-changes')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'settings',
+                    filter: `key=in.(max_on_stage_registrations,max_off_stage_registrations)`
+                },
+                (payload) => {
+                    // When settings change, refetch stats to get new limits
+                    if (studentId) {
+                        fetchStats();
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [studentId]);
+
     const fetchStudentId = async () => {
         if (!user?.id) return;
         const { data } = await supabase.from('students').select('id').eq('user_id', user.id).maybeSingle();
@@ -112,9 +138,9 @@ export function StudentDashboard() {
         let onStageLimit = 2;
         let offStageLimit = 3;
         settings?.forEach(s => {
-            const val = String(s.value);
-            if (s.key === 'max_on_stage_registrations') onStageLimit = parseInt(val) || 2;
-            if (s.key === 'max_off_stage_registrations') offStageLimit = parseInt(val) || 3;
+            const val = s.value as any;
+            if (s.key === 'max_on_stage_registrations') onStageLimit = val?.limit || 2;
+            if (s.key === 'max_off_stage_registrations') offStageLimit = val?.limit || 3;
         });
         const { data: registrations } = await supabase.from('registrations').select(`id, status, event:events!inner(category)`).eq('student_id', studentId);
         const approved = registrations?.filter(r => r.status === 'approved').length || 0;
@@ -272,10 +298,10 @@ export function StudentDashboard() {
                         </div>
                     </div>
 
-                    <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {upcomingEvents.length > 0 ? (
                             upcomingEvents.map(event => (
-                                <div key={event.id} className="group relative min-w-[320px] p-0 rounded-[2rem] bg-card border border-border/50 shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden flex flex-col">
+                                <div key={event.id} className="group relative p-0 rounded-[2rem] bg-card border border-border/50 shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden flex flex-col">
                                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-orange-300 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
 
                                     <div className="p-8 pb-4 flex-1 space-y-4">
@@ -320,7 +346,7 @@ export function StudentDashboard() {
                                 </div>
                             ))
                         ) : (
-                            <div className="w-full text-center py-12 text-muted-foreground text-sm font-medium border-2 border-dashed border-border/50 rounded-2xl">
+                            <div className="col-span-full text-center py-12 text-muted-foreground text-sm font-medium border-2 border-dashed border-border/50 rounded-2xl">
                                 No upcoming events open for registration.
                             </div>
                         )}

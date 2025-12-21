@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { EVENT_CATEGORIES, EVENT_MODES, REGISTRATION_METHODS } from '@/lib/constants';
+import { logEventActivity } from '@/utils/activityLogger';
 
 interface CreateEventFormProps {
   onSuccess?: () => void;
@@ -134,14 +135,12 @@ export function CreateEventForm({ onSuccess, onCancel }: CreateEventFormProps) {
       if (error) throw error;
 
       // Log activity
-      await supabase.from('activity_logs').insert({
-        user_id: profile?.id,
-        action: 'event_created',
-        details: {
+      if (profile?.id) {
+        await logEventActivity(profile.id, 'event_created', {
           event_name: formData.name,
           event_category: formData.category,
-        },
-      });
+        });
+      }
 
       toast({
         title: 'Success',
@@ -298,7 +297,7 @@ export function CreateEventForm({ onSuccess, onCancel }: CreateEventFormProps) {
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="maxParticipants">Global Cap</Label>
+          <Label htmlFor="maxParticipants">Total Participants</Label>
           <Input
             id="maxParticipants"
             type="number"

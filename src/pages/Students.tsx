@@ -29,7 +29,7 @@ import { USER_ROLES, ACADEMIC_YEARS, getYearLabel } from '@/lib/constants';
 import { hasRole, getCoordinatorYear } from '@/lib/roleUtils';
 import { AddStudentDialog, EditStudentDialog, CSVUploadDialog } from '@/components/forms';
 import { toast } from '@/hooks/use-toast';
-import { logActivity } from '@/lib/logger';
+import { logStudentActivity } from '@/utils/activityLogger';
 import { format } from 'date-fns';
 import {
   Dialog,
@@ -145,15 +145,16 @@ export default function Students() {
       }
 
       // Log activity
-      // Log activity
-      await logActivity(
-        profile?.id,
-        'student_deleted',
-        {
-          student_name: studentName,
-          student_id: studentId,
-        }
-      );
+      if (profile?.id) {
+        await logStudentActivity(
+          profile.id,
+          'student_deleted',
+          {
+            student_name: studentName,
+            student_id: studentId,
+          }
+        );
+      }
 
       toast({
         title: 'Success',

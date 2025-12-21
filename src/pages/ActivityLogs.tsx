@@ -9,7 +9,7 @@ import { Activity, Search, User, Clock, FileText, Globe, Monitor, Smartphone, Ta
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRole } from '@/contexts/RoleContext';
-import { USER_ROLES } from '@/lib/constants';
+import { USER_ROLES, getRoleLabel } from '@/lib/constants';
 import { hasRole, getCoordinatorYear } from '@/lib/roleUtils';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -48,19 +48,16 @@ export default function ActivityLogs() {
   };
 
   useEffect(() => {
-    fetchLogs();
-  }, [profile, currentPage, actionFilter, searchTerm]); // Added searchTerm to dependency array for automatic fetching or keep manual? 
-  // Actually, keeping original logic: useEffect triggers fetchLogs when dependencies change.
-  // But wait, in the original code, fetchLogs uses searchTerm state.
-  // The original fetchLogs call was in useEffect dependent on [profile, currentPage, actionFilter].
-  // If we want search to trigger fetch, we should add searchTerm to useEffect dep array.
-
-  useEffect(() => {
-    // Debounce search could be better but for now let's just let the effect run
+    // Single debounced fetch for profile, page, filter, and search
+    let isMounted = true;
     const timer = setTimeout(() => {
-      fetchLogs();
-    }, 500);
-    return () => clearTimeout(timer);
+      if (isMounted) fetchLogs();
+    }, 400);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
   }, [profile, currentPage, actionFilter, searchTerm]);
 
   const fetchLogs = async () => {
@@ -91,7 +88,6 @@ export default function ActivityLogs() {
 
       if (profile.role &&
         !hasRole(profile.role, USER_ROLES.ADMIN) &&
-        !hasRole(profile.role, USER_ROLES.EVENT_MANAGER) &&
         profile.id) {
         query = query.eq('user_id', profile.id);
       }
@@ -101,7 +97,9 @@ export default function ActivityLogs() {
       }
 
       if (searchTerm) {
-        query = query.or(`action.ilike.%${searchTerm}%,details::text.ilike.%${searchTerm}%`);
+        // Use the 'or' filter correctly. Searching details::text can be risky but often works for JSONB
+        // We'll also try to search in the user's name if we can, but simpler ORs are safer.
+        query = query.or(`action.ilike.%${searchTerm}%,details->>email.ilike.%${searchTerm}%,details->>name.ilike.%${searchTerm}%,details->>event_name.ilike.%${searchTerm}%`);
       }
 
       const { data, error, count } = await query
@@ -113,17 +111,44 @@ export default function ActivityLogs() {
       setLogs(data || []);
       setTotalLogs(count || 0);
       setTotalPages(Math.ceil((count || 0) / logsPerPage));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching activity logs:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to fetch activity logs',
+        title: 'Query Failed',
+        description: error.message || 'Failed to fetch activity logs',
         variant: 'destructive',
+        duration: 4000,
       });
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // Real-time subscription for new logs
+    const channel = supabase
+      .channel('activity_logs_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'activity_logs'
+        },
+        (payload) => {
+          // If we are on the first page and no filters are active, we can just refetch
+          // Or more simply, always refetch but only if current page is 1
+          if (currentPage === 1 && actionFilter === 'all' && !searchTerm) {
+            fetchLogs();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentPage, actionFilter, searchTerm]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -176,19 +201,25 @@ export default function ActivityLogs() {
   const formatActionDescription = (log: ActivityLog) => {
     const { action, details } = log;
     switch (action) {
-      case 'event_created': return `Created event: ${details?.event_name || 'Unknown'}`;
-      case 'event_updated': return `Updated event: ${details?.event_name || 'Unknown'}`;
-      case 'event_deleted': return `Deleted event: ${details?.event_name || 'Unknown'}`;
-      case 'student_created': return `Added student: ${details?.student_name || 'Unknown'}`;
-      case 'student_updated': return `Updated student: ${details?.student_name || 'Unknown'}`;
-      case 'student_deleted': return `Deleted student: ${details?.student_name || 'Unknown'}`;
-      case 'registration_created': return `New registration for ${details?.event_name || 'event'}`;
-      case 'registration_status_updated': return `Status changed to ${details?.new_status}`;
+      case 'event_created': return `Created event: ${details?.name || details?.event_name || 'Unknown'}`;
+      case 'event_updated': return `Updated event: ${details?.name || details?.event_name || 'Unknown'}`;
+      case 'event_deleted': return `Deleted event: ${details?.name || details?.event_name || 'Unknown'}`;
+      case 'student_created': return `Added student: ${details?.name || details?.student_name || 'Unknown'}`;
+      case 'student_updated': return `Updated student: ${details?.name || details?.student_name || 'Unknown'}`;
+      case 'student_deleted': return `Deleted student: ${details?.name || details?.student_name || 'Unknown'}`;
+      case 'registration_created': return `Registered ${details?.student_name || 'student'} for ${details?.event_name || 'event'}`;
+      case 'students_registered': return `Bulk registered ${details?.student_count || 0} students for ${details?.event_name || 'event'}`;
+      case 'registration_status_updated': return `Changed registration status to ${details?.new_status || details?.status}`;
+      case 'registration_deleted': return `Removed registration for ${details?.event_name || 'event'}`;
       case 'user_login': return `User logged in`;
       case 'user_logout': return `User logged out`;
+      case 'user_created': return `Created admin user: ${details?.email || 'Unknown'}`;
+      case 'user_updated': return `Updated admin user: ${details?.email || 'Unknown'}`;
+      case 'user_deleted': return `Deleted user account: ${details?.email || ''}`;
+      case 'settings_updated': return `Updated system settings: ${details?.key || ''}`;
+      case 'global_registration_status_changed': return `Global registrations ${details?.status}`;
       default:
-        // Handle "System deleted a request" format or generic formatting
-        if (!log.user && action.includes('deleted')) return `System deleted a request`;
+        if (!log.user && action.includes('deleted')) return `System deleted a record`;
         return action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     }
   };
@@ -243,6 +274,9 @@ export default function ActivityLogs() {
             <SelectContent>
               <SelectItem value="all">All Actions</SelectItem>
               <SelectItem value="user_login">Login</SelectItem>
+              <SelectItem value="user_logout">Logout</SelectItem>
+              <SelectItem value="user_created">User Created</SelectItem>
+              <SelectItem value="user_deleted">User Deleted</SelectItem>
               <SelectItem value="event_created">Event Created</SelectItem>
               <SelectItem value="event_updated">Event Updated</SelectItem>
               <SelectItem value="student_created">Student Created</SelectItem>
@@ -306,7 +340,12 @@ export default function ActivityLogs() {
                       <div className="flex flex-col">
                         <span className="font-bold text-sm text-foreground">{log.user ? log.user.full_name : 'System'}</span>
                         <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
-                          {log.user ? (Array.isArray(log.user.role) ? log.user.role[0] : (log.user.role || 'ID: ' + log.user.id.substring(0, 6))) : '-'}
+                          {log.user ? (() => {
+                            const roles = Array.isArray(log.user.role) ? log.user.role : [log.user.role as string];
+                            if (roles.includes(USER_ROLES.ADMIN)) return 'Administrator';
+                            if (roles.length > 2) return `${getRoleLabel(roles[0])} + ${roles.length - 1} more`;
+                            return roles.map(r => getRoleLabel(r)).join(', ');
+                          })() : 'SYSTEM'}
                         </span>
                       </div>
                     </TableCell>

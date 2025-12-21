@@ -39,8 +39,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const lastLoggedSessionId = React.useRef<string | null>(null);
+  const currentProfileIdRef = React.useRef<string | null>(null);
 
-  const fetchProfile = async (userId: string, shouldLogLogin: boolean = false) => {
+  const fetchProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -50,14 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
       setProfile(data);
-
-      // Only log user login activity if explicitly requested (on actual sign-in)
-      if (shouldLogLogin) {
-        await logUserLogin(data.id, {
-          login_method: 'email_password',
-          timestamp: new Date().toISOString()
-        });
-      }
+      currentProfileIdRef.current = data?.id || null;
     } catch (error) {
       console.error('Error fetching profile:', error);
       toast({
@@ -77,15 +72,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          setTimeout(() => {
-            // Only log login on actual sign-in events, not on page refresh
-            const shouldLogLogin = event === 'SIGNED_IN';
-            fetchProfile(session.user.id, shouldLogLogin);
-          }, 0);
+          // Check if we've already logged this specific access token
+          const storageKey = 'aaroh_session_logged_id';
+          const lastLoggedToken = typeof window !== 'undefined' ? sessionStorage.getItem(storageKey) : null;
+
+          if (event === 'SIGNED_IN' && lastLoggedToken !== session.access_token) {
+            // Update storage immediately to prevent race conditions
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem(storageKey, session.access_token);
+            }
+
+            // Log the login event
+            const { data: p } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('user_id', session.user.id)
+              .single();
+
+            if (p?.id) {
+              await logUserLogin(p.id, {
+                login_method: 'email_password',
+                timestamp: new Date().toISOString()
+              });
+            }
+          }
+
+          fetchProfile(session.user.id);
         } else {
           // Handle logout event
-          if (event === 'SIGNED_OUT' && profile?.id) {
-            await logUserLogout(profile.id);
+          if (event === 'SIGNED_OUT' && currentProfileIdRef.current) {
+            console.log('[AuthContext] Logging out user:', currentProfileIdRef.current);
+            try {
+              await logUserLogout(currentProfileIdRef.current);
+              console.log('[AuthContext] Logout logged successfully');
+            } catch (error) {
+              console.error('[AuthContext] Failed to log logout:', error);
+            }
+            if (typeof window !== 'undefined') {
+              sessionStorage.removeItem('aaroh_session_logged_id');
+            }
+            lastLoggedSessionId.current = null;
+            currentProfileIdRef.current = null;
+          } else if (event === 'SIGNED_OUT') {
+            console.warn('[AuthContext] SIGNED_OUT event fired but no currentProfileIdRef');
           }
           setProfile(null);
         }
@@ -97,8 +126,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        // Don't log login on initial session check (page refresh)
-        fetchProfile(session.user.id, false);
+        // Just fetch profile, login logging is handled in onAuthStateChange
+        fetchProfile(session.user.id);
       }
       setLoading(false);
     });

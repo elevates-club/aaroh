@@ -22,6 +22,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { getRoleLabel, ACADEMIC_YEARS } from '@/lib/constants';
 import { format } from 'date-fns';
+import { logActivity } from '@/utils/activityLogger';
 import {
     Select,
     SelectContent,
@@ -147,6 +148,18 @@ export default function Profile() {
                 title: 'Success',
                 description: 'Profile updated successfully',
             });
+            if (user?.id) {
+                await logActivity({
+                    user_id: user.id,
+                    action: 'profile_updated',
+                    details: {
+                        phone_changed: formData.phone !== (studentData?.phone_number || ''),
+                        email_changed: formData.email !== (profile?.email || user.email),
+                        gender_changed: formData.gender !== (studentData?.gender || '')
+                    }
+                });
+            }
+
             setEditing(false);
             fetchData(); // Refresh data
 
@@ -193,6 +206,14 @@ export default function Profile() {
                 title: 'Success',
                 description: 'Password updated successfully',
             });
+            if (user?.id) {
+                await logActivity({
+                    user_id: user.id,
+                    action: 'password_updated',
+                    details: { method: 'profile_page' }
+                });
+            }
+
             setPasswordOpen(false);
             setPasswordData({ newPassword: '', confirmPassword: '' });
 

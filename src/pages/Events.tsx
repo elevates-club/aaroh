@@ -21,6 +21,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRole } from '@/contexts/RoleContext';
 import { USER_ROLES, EVENT_CATEGORIES, EVENT_MODES, REGISTRATION_METHODS } from '@/lib/constants';
 import { hasRole, getCoordinatorYear } from '@/lib/roleUtils';
+import { logEventActivity } from '@/utils/activityLogger';
 import { CreateEventDialog } from '@/components/forms/CreateEventDialog';
 import { EditEventDialog } from '@/components/forms/EditEventDialog';
 import { StudentRegistrationDialog } from '@/components/forms/StudentRegistrationDialog';
@@ -124,6 +125,14 @@ export default function Events() {
         title: 'PDF Downloaded',
         description: `Participants list for ${event.name} has been downloaded.`,
       });
+
+      if (profile?.id) {
+        await logEventActivity(profile.id, 'event_updated', {
+          event_id: event.id,
+          event_name: event.name,
+          action_detail: 'Downloaded participants list PDF'
+        });
+      }
     } catch (error) {
       console.error('Error downloading PDF:', error);
       toast({
@@ -149,6 +158,14 @@ export default function Events() {
         title: 'Event Deleted',
         description: 'The event has been successfully removed.',
       });
+
+      if (profile?.id) {
+        await logEventActivity(profile.id, 'event_deleted', {
+          event_id: eventId,
+          event_name: events.find(e => e.id === eventId)?.name || 'Unknown'
+        });
+      }
+
       fetchEvents();
     } catch (error) {
       console.error('Error deleting event:', error);

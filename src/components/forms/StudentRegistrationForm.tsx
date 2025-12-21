@@ -26,6 +26,7 @@ import { toast } from '@/hooks/use-toast';
 import { RegistrationWarningDialog } from '@/components/ui/registration-warning-dialog';
 import { RegistrationLimitBadge } from '@/components/ui/registration-limit-badge';
 import { getStudentRegistrationInfo, StudentRegistrationInfo } from '@/lib/registration-limits';
+import { logRegistrationActivity } from '@/utils/activityLogger';
 
 interface Student {
   id: string;
@@ -245,6 +246,15 @@ export function StudentRegistrationForm({ event, onSuccess, onCancel }: StudentR
         description: 'Student has been unregistered from this event.',
       });
 
+      if (profile?.id) {
+        await logRegistrationActivity(profile.id, 'registration_deleted', {
+          registration_id: registrationId,
+          event_id: event.id,
+          event_name: event.name,
+          action_detail: 'Coordinator removed student from event'
+        });
+      }
+
       // Refresh the data
       await fetchYearRegistrationCount();
       await fetchExistingRegistrations();
@@ -364,16 +374,14 @@ export function StudentRegistrationForm({ event, onSuccess, onCancel }: StudentR
       if (error) throw error;
 
       // Log activity
-      await supabase.from('activity_logs').insert({
-        user_id: profile?.id,
-        action: 'students_registered',
-        details: {
+      if (profile?.id) {
+        await logRegistrationActivity(profile.id, 'students_registered', {
           event_id: event.id,
           event_name: event.name,
           student_count: selectedStudents.length,
           students: selectedStudents,
-        },
-      });
+        });
+      }
 
       toast({
         title: 'Success',

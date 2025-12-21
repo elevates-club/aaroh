@@ -12,7 +12,7 @@ import { USER_ROLES } from '@/lib/constants';
 import { hasRole, getCoordinatorYear } from '@/lib/roleUtils';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { logActivity } from '@/lib/logger';
+import { logRegistrationActivity, logEventActivity } from '@/utils/activityLogger';
 import { PDFDownloadButton } from '@/components/PDFDownloadButton';
 import { RegistrationLimitBadge } from '@/components/ui/registration-limit-badge';
 import { getStudentRegistrationInfo, fetchRegistrationLimits } from '@/lib/registration-limits';
@@ -170,17 +170,17 @@ export default function Registrations() {
       if (error) throw error;
 
       // Log activity
-      // Log activity
-      await logActivity(
-        profile?.id,
-        'registration_status_updated',
-        {
-          registration_id: registrationId,
-          new_status: newStatus,
-          previous_status: 'unknown', // Ideally we fetch previous status, but keeping simple for now
-          registration_data: { id: registrationId, status: newStatus }
-        }
-      );
+      if (profile?.id) {
+        await logRegistrationActivity(
+          profile.id,
+          'registration_status_updated',
+          {
+            registration_id: registrationId,
+            new_status: newStatus,
+            registration_data: { id: registrationId, status: newStatus }
+          }
+        );
+      }
 
       toast({
         title: 'Success',
@@ -216,6 +216,14 @@ export default function Registrations() {
         title: 'Registration Removed',
         description: `${studentName} has been removed from ${eventName}`,
       });
+
+      if (profile?.id) {
+        await logRegistrationActivity(profile.id, 'registration_deleted', {
+          registration_id: registrationId,
+          student_name: studentName,
+          event_name: eventName
+        });
+      }
 
       fetchRegistrations();
     } catch (error) {
@@ -543,6 +551,13 @@ export default function Registrations() {
                               // PDF download for this specific event
                               const { generateEventParticipantsPDF } = await import('@/utils/pdfGeneratorV2');
                               await generateEventParticipantsPDF(event as any, activeRole);
+                              if (profile?.id) {
+                                await logEventActivity(profile.id, 'event_updated', {
+                                  event_id: event.id,
+                                  event_name: event.name,
+                                  action_detail: 'Downloaded participants list PDF from registrations page'
+                                });
+                              }
                               toast({
                                 title: 'PDF Downloaded',
                                 description: `Participants list for ${event.name} has been downloaded.`,

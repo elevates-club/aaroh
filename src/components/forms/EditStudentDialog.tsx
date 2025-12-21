@@ -13,7 +13,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { logActivity } from '@/lib/logger';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Edit, Loader2, AlertCircle } from 'lucide-react';
@@ -21,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { ACADEMIC_YEARS } from '@/lib/constants';
 import { toast } from '@/hooks/use-toast';
+import { logStudentActivity } from '@/utils/activityLogger';
 
 const editStudentSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -85,7 +85,8 @@ export function EditStudentDialog({ student, onStudentUpdated, trigger }: EditSt
   }, [student, reset]);
 
   const onSubmit = async (data: EditStudentFormData) => {
-    if (profile?.role !== 'admin') {
+    const roles = Array.isArray(profile?.role) ? profile.role : [profile?.role];
+    if (!roles.includes('admin')) {
       setError('Only administrators can edit students');
       return;
     }
@@ -114,25 +115,27 @@ export function EditStudentDialog({ student, onStudentUpdated, trigger }: EditSt
       }
 
       // Log activity
-      await logActivity(
-        profile.id,
-        'student_updated',
-        {
-          student_id: student.id,
-          old_data: {
-            name: student.name,
-            roll_number: student.roll_number,
-            department: student.department,
-            year: student.year,
-          },
-          new_data: {
-            name: data.name,
-            roll_number: data.roll_number,
-            department: data.department,
-            year: data.year,
-          },
-        }
-      );
+      if (profile?.id) {
+        await logStudentActivity(
+          profile.id,
+          'student_updated',
+          {
+            student_id: student.id,
+            old_data: {
+              name: student.name,
+              roll_number: student.roll_number,
+              department: student.department,
+              year: student.year,
+            },
+            new_data: {
+              name: data.name,
+              roll_number: data.roll_number,
+              department: data.department,
+              year: data.year,
+            },
+          }
+        );
+      }
 
       toast({
         title: 'Success',

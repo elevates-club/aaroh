@@ -8,11 +8,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, UserPlus, AlertCircle } from 'lucide-react';
+import { Loader2, UserPlus, AlertCircle, Edit } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { ACADEMIC_YEARS } from '@/lib/constants';
 import { toast } from '@/hooks/use-toast';
+import { logStudentActivity } from '@/utils/activityLogger';
 
 const addStudentSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -55,7 +56,8 @@ export function AddStudentForm({ onSuccess, onCancel }: AddStudentFormProps) {
   const selectedYear = watch('year');
 
   const onSubmit = async (data: AddStudentFormData) => {
-    if (profile?.role !== 'admin') {
+    const roles = Array.isArray(profile?.role) ? profile.role : [profile?.role].filter(Boolean) as string[];
+    if (!roles.includes('admin')) {
       setError('Only administrators can add students');
       return;
     }
@@ -85,18 +87,14 @@ export function AddStudentForm({ onSuccess, onCancel }: AddStudentFormProps) {
       }
 
       // Log activity
-      await supabase.from('activity_logs').insert([
-        {
-          user_id: profile.id,
-          action: 'student_created',
-          details: {
-            student_name: data.name,
-            roll_number: data.roll_number,
-            department: data.department,
-            year: data.year,
-          },
-        },
-      ]);
+      if (profile?.id) {
+        await logStudentActivity(profile.id, 'student_created', {
+          student_name: data.name,
+          roll_number: data.roll_number,
+          department: data.department,
+          year: data.year,
+        });
+      }
 
       toast({
         title: 'Success',
