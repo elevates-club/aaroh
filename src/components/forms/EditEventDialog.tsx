@@ -8,7 +8,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Edit } from 'lucide-react';
+import { Edit, Palette } from 'lucide-react';
 import { EditEventForm } from './EditEventForm';
 
 interface Event {
@@ -59,10 +59,15 @@ export function EditEventDialog({ event, onEventUpdated, trigger }: EditEventDia
         {trigger || defaultTrigger}
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="sr-only">
-          <DialogTitle>Edit Arts Event</DialogTitle>
+        <DialogHeader>
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <Palette className="h-4 w-4 text-primary" />
+            </div>
+            <DialogTitle className="text-xl">Edit Event</DialogTitle>
+          </div>
           <DialogDescription>
-            Update the details of this arts event
+            Update the configuration for "{event.name}"
           </DialogDescription>
         </DialogHeader>
         <EditEventForm event={event} onSuccess={handleSuccess} onCancel={handleCancel} />

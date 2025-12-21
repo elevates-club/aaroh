@@ -4,10 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Loader2, Palette, Users, Layers, Layout, ShieldCheck } from 'lucide-react';
+import { CalendarIcon, Loader2, Palette } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -197,218 +196,209 @@ export function EditEventForm({ event, onSuccess, onCancel }: EditEventFormProps
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto border-0 shadow-none">
-      <CardHeader className="space-y-1 px-0">
-        <div className="flex items-center gap-2">
-          <Palette className="h-5 w-5 text-primary" />
-          <CardTitle className="text-2xl">Edit Event</CardTitle>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="name">Event Name *</Label>
+          <Input
+            id="name"
+            value={formData.name}
+            onChange={(e) => handleInputChange('name', e.target.value)}
+            disabled={loading}
+          />
         </div>
-        <CardDescription>
-          Update the configuration for "{event.name}"
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="px-0">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Event Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="category">Category *</Label>
-              <Select
-                value={formData.category}
-                onValueChange={(value) => handleInputChange('category', value)}
-                disabled={loading}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={EVENT_CATEGORIES.ON_STAGE}>On-Stage</SelectItem>
-                  <SelectItem value={EVENT_CATEGORIES.OFF_STAGE}>Off-Stage</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="category">Category *</Label>
+          <Select
+            value={formData.category}
+            onValueChange={(value) => handleInputChange('category', value)}
+            disabled={loading}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={EVENT_CATEGORIES.ON_STAGE}>On-Stage</SelectItem>
+              <SelectItem value={EVENT_CATEGORIES.OFF_STAGE}>Off-Stage</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="mode">Mode *</Label>
-              <Select
-                value={formData.mode}
-                onValueChange={(value) => handleInputChange('mode', value)}
-                disabled={loading}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={EVENT_MODES.INDIVIDUAL}>Individual</SelectItem>
-                  <SelectItem value={EVENT_MODES.GROUP}>Group</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="registrationMethod">Registration Method *</Label>
-              <Select
-                value={formData.registrationMethod}
-                onValueChange={(value) => handleInputChange('registrationMethod', value)}
-                disabled={loading || formData.mode === EVENT_MODES.GROUP}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={REGISTRATION_METHODS.COORDINATOR}>Coordinator Only</SelectItem>
-                  <SelectItem value={REGISTRATION_METHODS.STUDENT}>Student Self-Reg</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="maxEntriesPerYear">Entries per Year *</Label>
-              <Input
-                id="maxEntriesPerYear"
-                type="number"
-                value={formData.maxEntriesPerYear}
-                onChange={(e) => handleInputChange('maxEntriesPerYear', e.target.value)}
-                disabled={loading || formData.mode === EVENT_MODES.GROUP}
-                min="1"
-              />
-            </div>
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="mode">Mode *</Label>
+          <Select
+            value={formData.mode}
+            onValueChange={(value) => handleInputChange('mode', value)}
+            disabled={loading}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={EVENT_MODES.INDIVIDUAL}>Individual</SelectItem>
+              <SelectItem value={EVENT_MODES.GROUP}>Group</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="registrationMethod">Registration Method *</Label>
+          <Select
+            value={formData.registrationMethod}
+            onValueChange={(value) => handleInputChange('registrationMethod', value)}
+            disabled={loading || formData.mode === EVENT_MODES.GROUP}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={REGISTRATION_METHODS.COORDINATOR}>Coordinator Only</SelectItem>
+              <SelectItem value={REGISTRATION_METHODS.STUDENT}>Student Self-Reg</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="maxEntriesPerYear">Entries per Year *</Label>
+          <Input
+            id="maxEntriesPerYear"
+            type="number"
+            value={formData.maxEntriesPerYear}
+            onChange={(e) => handleInputChange('maxEntriesPerYear', e.target.value)}
+            disabled={loading || formData.mode === EVENT_MODES.GROUP}
+            min="1"
+          />
+        </div>
+      </div>
 
-          {formData.mode === EVENT_MODES.GROUP && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg border border-dashed">
-              <div className="space-y-2">
-                <Label htmlFor="minTeamSize">Min Team Size</Label>
-                <Input
-                  id="minTeamSize"
-                  type="number"
-                  value={formData.minTeamSize}
-                  onChange={(e) => handleInputChange('minTeamSize', e.target.value)}
-                  disabled={loading}
-                  min="2"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="maxTeamSize">Max Team Size</Label>
-                <Input
-                  id="maxTeamSize"
-                  type="number"
-                  value={formData.maxTeamSize}
-                  onChange={(e) => handleInputChange('maxTeamSize', e.target.value)}
-                  disabled={loading}
-                  min="2"
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Description *</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
+      {formData.mode === EVENT_MODES.GROUP && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3 bg-muted/30 rounded-lg border border-dashed border-primary/20">
+          <div className="space-y-1.5">
+            <Label htmlFor="minTeamSize">Min Team Size</Label>
+            <Input
+              id="minTeamSize"
+              type="number"
+              value={formData.minTeamSize}
+              onChange={(e) => handleInputChange('minTeamSize', e.target.value)}
               disabled={loading}
-              rows={3}
+              min="2"
             />
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="venue">Venue *</Label>
-              <Input
-                id="venue"
-                value={formData.venue}
-                onChange={(e) => handleInputChange('venue', e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="maxParticipants">Global Participant Cap</Label>
-              <Input
-                id="maxParticipants"
-                type="number"
-                value={formData.maxParticipants}
-                onChange={(e) => handleInputChange('maxParticipants', e.target.value)}
-                disabled={loading}
-              />
-            </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="maxTeamSize">Max Team Size</Label>
+            <Input
+              id="maxTeamSize"
+              type="number"
+              value={formData.maxTeamSize}
+              onChange={(e) => handleInputChange('maxTeamSize', e.target.value)}
+              disabled={loading}
+              min="2"
+            />
           </div>
+        </div>
+      )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2 flex flex-col">
-              <Label>Registration Deadline</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      'w-full justify-start text-left font-normal',
-                      !formData.registrationDeadline && 'text-muted-foreground'
-                    )}
-                    disabled={loading}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.registrationDeadline ? format(formData.registrationDeadline, 'PPP') : 'Pick date'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={formData.registrationDeadline}
-                    onSelect={(date) => handleDateChange('registrationDeadline', date)}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="space-y-2 flex flex-col">
-              <Label>Event Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      'w-full justify-start text-left font-normal',
-                      !formData.eventDate && 'text-muted-foreground'
-                    )}
-                    disabled={loading}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.eventDate ? format(formData.eventDate, 'PPP') : 'Pick date'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={formData.eventDate}
-                    onSelect={(date) => handleDateChange('eventDate', date)}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="description">Description *</Label>
+        <Textarea
+          id="description"
+          value={formData.description}
+          onChange={(e) => handleInputChange('description', e.target.value)}
+          disabled={loading}
+          rows={2}
+          className="min-h-[80px]"
+        />
+      </div>
 
-          <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4">
-            {onCancel && (
-              <Button type="button" variant="outline" onClick={onCancel} disabled={loading} className="flex-1">
-                Cancel
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="venue">Venue *</Label>
+          <Input
+            id="venue"
+            value={formData.venue}
+            onChange={(e) => handleInputChange('venue', e.target.value)}
+            disabled={loading}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="maxParticipants">Global Cap</Label>
+          <Input
+            id="maxParticipants"
+            type="number"
+            placeholder="Unlimited"
+            value={formData.maxParticipants}
+            onChange={(e) => handleInputChange('maxParticipants', e.target.value)}
+            disabled={loading}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-1.5 flex flex-col">
+          <Label>Registration Deadline</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  'w-full justify-start text-left font-normal',
+                  !formData.registrationDeadline && 'text-muted-foreground'
+                )}
+                disabled={loading}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {formData.registrationDeadline ? format(formData.registrationDeadline, 'PPP') : 'Pick date'}
               </Button>
-            )}
-            <Button type="submit" disabled={loading} className="flex-1 bg-gradient-to-r from-primary to-secondary">
-              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Palette className="mr-2 h-4 w-4" />}
-              Update Event
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={formData.registrationDeadline}
+                onSelect={(date) => handleDateChange('registrationDeadline', date)}
+                disabled={(date) => date < new Date()}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div className="space-y-1.5 flex flex-col">
+          <Label>Event Date</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  'w-full justify-start text-left font-normal',
+                  !formData.eventDate && 'text-muted-foreground'
+                )}
+                disabled={loading}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {formData.eventDate ? format(formData.eventDate, 'PPP') : 'Pick date'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={formData.eventDate}
+                onSelect={(date) => handleDateChange('eventDate', date)}
+                disabled={(date) => date < new Date()}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+
+      <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4 border-t">
+        {onCancel && (
+          <Button type="button" variant="ghost" onClick={onCancel} disabled={loading} className="flex-1">
+            Cancel
+          </Button>
+        )}
+        <Button type="submit" disabled={loading} className="flex-1 bg-gradient-to-r from-primary to-secondary">
+          {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Palette className="mr-2 h-4 w-4" />}
+          Update Event
+        </Button>
+      </div>
+    </form>
   );
 }

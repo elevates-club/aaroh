@@ -8,7 +8,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Palette } from 'lucide-react';
 import { CreateEventForm } from './CreateEventForm';
 
 interface CreateEventDialogProps {
@@ -40,10 +40,15 @@ export function CreateEventDialog({ onEventCreated, trigger }: CreateEventDialog
         {trigger || defaultTrigger}
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="sr-only">
-          <DialogTitle>Create Events Event</DialogTitle>
+        <DialogHeader>
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <Palette className="h-4 w-4 text-primary" />
+            </div>
+            <DialogTitle className="text-xl">Create Event</DialogTitle>
+          </div>
           <DialogDescription>
-            Create a new game or athletic event for student registration
+            Configure a new AAROH event for students and coordinators
           </DialogDescription>
         </DialogHeader>
         <CreateEventForm onSuccess={handleSuccess} onCancel={handleCancel} />

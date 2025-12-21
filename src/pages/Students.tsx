@@ -29,6 +29,7 @@ import { USER_ROLES, ACADEMIC_YEARS, getYearLabel } from '@/lib/constants';
 import { hasRole, getCoordinatorYear } from '@/lib/roleUtils';
 import { AddStudentDialog, EditStudentDialog, CSVUploadDialog } from '@/components/forms';
 import { toast } from '@/hooks/use-toast';
+import { logActivity } from '@/lib/logger';
 import { format } from 'date-fns';
 import {
   Dialog,
@@ -135,16 +136,15 @@ export default function Students() {
       }
 
       // Log activity
-      await supabase.from('activity_logs').insert([
+      // Log activity
+      await logActivity(
+        profile?.id,
+        'student_deleted',
         {
-          user_id: profile?.id,
-          action: 'student_deleted',
-          details: {
-            student_name: studentName,
-            student_id: studentId,
-          },
-        },
-      ]);
+          student_name: studentName,
+          student_id: studentId,
+        }
+      );
 
       toast({
         title: 'Success',
@@ -253,11 +253,11 @@ export default function Students() {
 
   const getYearColor = (year: string) => {
     switch (year) {
-      case 'first': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-      case 'second': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-      case 'third': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
-      case 'fourth': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+      case 'first': return 'bg-blue-500/10 text-blue-600 border-blue-200/50';
+      case 'second': return 'bg-emerald-500/10 text-emerald-600 border-emerald-200/50';
+      case 'third': return 'bg-amber-500/10 text-amber-600 border-amber-200/50';
+      case 'fourth': return 'bg-purple-500/10 text-purple-600 border-purple-200/50';
+      default: return 'bg-muted text-muted-foreground border-border/50';
     }
   };
 

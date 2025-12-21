@@ -86,6 +86,11 @@ export default function UserManagement() {
         try {
             setLoading(true);
 
+            // Security Check: Event Managers cannot create Admins
+            if (isEventManager && !isAdmin && formData.roles.includes(USER_ROLES.ADMIN)) {
+                throw new Error("Insufficient permissions: Event Managers cannot create Admin accounts.");
+            }
+
             toast({
                 title: 'Note',
                 description: 'Full user creation requires admin SDK. Please use the signup page or admin scripts.',
@@ -111,6 +116,17 @@ export default function UserManagement() {
 
         try {
             setLoading(true);
+
+            // Security Check: Event Managers cannot assign Admin role
+            if (isEventManager && !isAdmin && formData.roles.includes(USER_ROLES.ADMIN)) {
+                throw new Error("Insufficient permissions: Event Managers cannot assign Admin role.");
+            }
+
+            // Security Check: Event Managers cannot edit existing Admins (should be blocked by UI but double check)
+            const targetIsAdmin = Array.isArray(selectedUser.role) ? selectedUser.role.includes(USER_ROLES.ADMIN) : selectedUser.role === USER_ROLES.ADMIN;
+            if (isEventManager && !isAdmin && targetIsAdmin) {
+                throw new Error("Insufficient permissions: Event Managers cannot edit Admin accounts.");
+            }
 
             const { error } = await supabase
                 .from('profiles')
@@ -216,26 +232,27 @@ export default function UserManagement() {
         }));
     };
 
+    const isEventManager = profile?.role && (Array.isArray(profile.role) ? profile.role.includes(USER_ROLES.EVENT_MANAGER) : profile.role === USER_ROLES.EVENT_MANAGER);
+    const isAdmin = profile?.role && (Array.isArray(profile.role) ? profile.role.includes(USER_ROLES.ADMIN) : profile.role === USER_ROLES.ADMIN);
+
     const filteredUsers = users.filter(user => {
         const roles = Array.isArray(user.role) ? user.role : [user.role];
+
+        // Event Managers cannot see Admins
+        if (isEventManager && !isAdmin && roles.includes(USER_ROLES.ADMIN)) {
+            return false;
+        }
+
         const roleLabels = roles.map(r => getRoleLabel(r)).join(' ');
         return user.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
             roleLabels.toLowerCase().includes(searchQuery.toLowerCase());
     });
 
-    if (profile?.role && !Array.isArray(profile.role) && profile.role !== USER_ROLES.ADMIN) {
+    if (!isAdmin && !isEventManager) {
         return (
             <div className="p-8 text-center">
-                <p className="text-muted-foreground">Access denied. Admin only.</p>
-            </div>
-        );
-    }
-
-    if (profile?.role && Array.isArray(profile.role) && !profile.role.includes(USER_ROLES.ADMIN)) {
-        return (
-            <div className="p-8 text-center">
-                <p className="text-muted-foreground">Access denied. Admin only.</p>
+                <p className="text-muted-foreground">Access denied. Admin or Event Manager only.</p>
             </div>
         );
     }
@@ -246,8 +263,8 @@ export default function UserManagement() {
     };
 
     return (
-        <div className="container mx-auto p-6 space-y-6">
-            <Card>
+        <div className="w-full max-w-[100vw] px-4 py-6 md:container md:mx-auto md:p-6 space-y-6 overflow-x-hidden">
+            <Card className="max-w-full">
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <div>
@@ -276,7 +293,7 @@ export default function UserManagement() {
                     </div>
 
                     {/* Users Table */}
-                    <div className="border rounded-lg">
+                    <div className="border rounded-lg w-full max-w-[calc(100vw-3rem)] overflow-x-auto">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -328,6 +345,7 @@ export default function UserManagement() {
                                                         variant="ghost"
                                                         size="icon"
                                                         onClick={() => openEditDialog(user)}
+                                                        disabled={isEventManager && !isAdmin && (Array.isArray(user.role) ? user.role.includes('admin') : user.role === 'admin')}
                                                     >
                                                         <Pencil className="w-4 h-4" />
                                                     </Button>
@@ -335,7 +353,7 @@ export default function UserManagement() {
                                                         variant="ghost"
                                                         size="icon"
                                                         onClick={() => openDeleteDialog(user)}
-                                                        disabled={user.id === profile?.id}
+                                                        disabled={user.id === profile?.id || (isEventManager && !isAdmin && (Array.isArray(user.role) ? user.role.includes('admin') : user.role === 'admin'))}
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </Button>
@@ -352,70 +370,76 @@ export default function UserManagement() {
 
             {/* Add/Edit User Dialogs - Role Selector Component */}
             {[
-                { open: showAddDialog, onOpenChange: setShowAddDialog, title: 'Add New User', description: 'Create a new coordinator or admin account', onSubmit: handleAddUser, showPassword: true },
+                { open: showAddDialog, onOpenChange: setShowAddDialog, title: 'Add New User', description: 'Create a new user account', onSubmit: handleAddUser, showPassword: true },
                 { open: showEditDialog, onOpenChange: setShowEditDialog, title: 'Edit User', description: 'Update user information', onSubmit: handleEditUser, showPassword: false }
             ].map((dialog, idx) => (
                 <Dialog key={idx} open={dialog.open} onOpenChange={dialog.onOpenChange}>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="max-w-xl">
                         <DialogHeader>
                             <DialogTitle>{dialog.title}</DialogTitle>
                             <DialogDescription>{dialog.description}</DialogDescription>
                         </DialogHeader>
-                        <div className="space-y-4 py-4">
-                            <div className="space-y-2">
-                                <Label htmlFor={`${idx}-name`}>Full Name</Label>
-                                <Input
-                                    id={`${idx}-name`}
-                                    value={formData.full_name}
-                                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                                    placeholder="John Doe"
-                                />
+                        <div className="space-y-6 py-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor={`${idx}-name`}>Full Name</Label>
+                                    <Input
+                                        id={`${idx}-name`}
+                                        value={formData.full_name}
+                                        onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                                        placeholder="John Doe"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor={`${idx}-email`}>Email</Label>
+                                    <Input
+                                        id={`${idx}-email`}
+                                        type="email"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        placeholder="coordinator@example.com"
+                                    />
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor={`${idx}-email`}>Email</Label>
-                                <Input
-                                    id={`${idx}-email`}
-                                    type="email"
-                                    value={formData.email}
-                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                    placeholder="coordinator@ekc.edu.in"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Roles (Select multiple)</Label>
-                                <div className="grid grid-cols-1 gap-2">
+
+                            <div className="space-y-3">
+                                <Label>Select Roles</Label>
+                                <div className="flex flex-wrap gap-2 p-4 bg-muted/30 rounded-lg border border-border/50">
                                     {[
                                         { value: USER_ROLES.ADMIN, label: 'Admin' },
                                         { value: USER_ROLES.EVENT_MANAGER, label: 'Event Manager' },
-                                        { value: USER_ROLES.FIRST_YEAR_COORDINATOR, label: 'First Year Coordinator' },
-                                        { value: USER_ROLES.SECOND_YEAR_COORDINATOR, label: 'Second Year Coordinator' },
-                                        { value: USER_ROLES.THIRD_YEAR_COORDINATOR, label: 'Third Year Coordinator' },
-                                        { value: USER_ROLES.FOURTH_YEAR_COORDINATOR, label: 'Fourth Year Coordinator' },
+                                        { value: USER_ROLES.FIRST_YEAR_COORDINATOR, label: '1st Year' },
+                                        { value: USER_ROLES.SECOND_YEAR_COORDINATOR, label: '2nd Year' },
+                                        { value: USER_ROLES.THIRD_YEAR_COORDINATOR, label: '3rd Year' },
+                                        { value: USER_ROLES.FOURTH_YEAR_COORDINATOR, label: '4th Year' },
                                         { value: USER_ROLES.STUDENT, label: 'Student' },
-                                    ].map((role) => (
-                                        <button
-                                            key={role.value}
-                                            type="button"
-                                            onClick={() => toggleRole(role.value)}
-                                            className={`px-4 py-3 rounded-lg border-2 text-left transition-all ${formData.roles.includes(role.value)
-                                                ? 'border-primary bg-primary/10 font-medium'
-                                                : 'border-border hover:border-primary/50'
-                                                }`}
-                                        >
-                                            <div className="flex items-center justify-between">
-                                                <span>{role.label}</span>
-                                                {formData.roles.includes(role.value) && (
-                                                    <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                                                        <svg className="w-3 h-3 text-primary-foreground" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                        </svg>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </button>
-                                    ))}
+                                    ]
+                                        .filter(role => isAdmin || role.value !== USER_ROLES.ADMIN)
+                                        .map((role) => {
+                                            const isSelected = formData.roles.includes(role.value);
+                                            return (
+                                                <button
+                                                    key={role.value}
+                                                    type="button"
+                                                    onClick={() => toggleRole(role.value)}
+                                                    className={`
+                                                        px-3 py-1.5 rounded-full text-sm font-medium transition-all
+                                                        ${isSelected
+                                                            ? 'bg-primary text-primary-foreground shadow-sm scale-105'
+                                                            : 'bg-background border border-border/50 text-muted-foreground hover:border-primary/50 hover:text-foreground'
+                                                        }
+                                                    `}
+                                                >
+                                                    {role.label}
+                                                </button>
+                                            );
+                                        })}
                                 </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Click to toggle roles. At least one role must be selected.
+                                </p>
                             </div>
+
                             {dialog.showPassword && (
                                 <div className="space-y-2">
                                     <Label htmlFor={`${idx}-password`}>Password</Label>
@@ -430,11 +454,11 @@ export default function UserManagement() {
                             )}
                         </div>
                         <DialogFooter>
-                            <Button variant="outline" onClick={() => dialog.onOpenChange(false)}>
+                            <Button variant="ghost" onClick={() => dialog.onOpenChange(false)}>
                                 Cancel
                             </Button>
                             <Button onClick={dialog.onSubmit} disabled={loading || formData.roles.length === 0}>
-                                {dialog.title.includes('Add') ? 'Add User' : 'Save Changes'}
+                                {dialog.title.includes('Add') ? 'Create User' : 'Save Changes'}
                             </Button>
                         </DialogFooter>
                     </DialogContent>

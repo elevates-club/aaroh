@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { logActivity } from '@/lib/logger';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Edit, Loader2, AlertCircle } from 'lucide-react';
@@ -113,27 +114,25 @@ export function EditStudentDialog({ student, onStudentUpdated, trigger }: EditSt
       }
 
       // Log activity
-      await supabase.from('activity_logs').insert([
+      await logActivity(
+        profile.id,
+        'student_updated',
         {
-          user_id: profile.id,
-          action: 'student_updated',
-          details: {
-            student_id: student.id,
-            old_data: {
-              name: student.name,
-              roll_number: student.roll_number,
-              department: student.department,
-              year: student.year,
-            },
-            new_data: {
-              name: data.name,
-              roll_number: data.roll_number,
-              department: data.department,
-              year: data.year,
-            },
+          student_id: student.id,
+          old_data: {
+            name: student.name,
+            roll_number: student.roll_number,
+            department: student.department,
+            year: student.year,
           },
-        },
-      ]);
+          new_data: {
+            name: data.name,
+            roll_number: data.roll_number,
+            department: data.department,
+            year: data.year,
+          },
+        }
+      );
 
       toast({
         title: 'Success',

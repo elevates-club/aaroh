@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +13,7 @@ import { useRole } from '@/contexts/RoleContext';
 import { USER_ROLES } from '@/lib/constants';
 import { hasRole, getCoordinatorYear } from '@/lib/roleUtils';
 import { toast } from '@/hooks/use-toast';
+import { logActivity } from '@/lib/logger';
 
 interface SettingsData {
   maxOnStageRegistrations: number;
@@ -101,7 +103,7 @@ export default function Settings() {
   const saveSettings = async () => {
     try {
       setSaving(true);
-      
+
       const updates = [
         {
           key: 'max_on_stage_registrations',
@@ -129,7 +131,7 @@ export default function Settings() {
         const { error } = await supabase
           .from('settings')
           .upsert(update, { onConflict: 'key' });
-        
+
         if (error) throw error;
       }
 
@@ -181,225 +183,185 @@ export default function Settings() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">System Settings</h1>
-        <p className="text-muted-foreground mt-1">
-          Configure system-wide settings and view statistics
-        </p>
+    <div className="p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1600px] mx-auto text-foreground">
+      {/* Header */}
+      <div className="flex flex-col gap-2">
+        <Badge variant="outline" className="w-fit rounded-full px-4 py-1 text-[10px] uppercase font-bold border-primary/20 bg-primary/5 text-primary tracking-widest">
+          Admin Console
+        </Badge>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-black tracking-tight text-foreground">
+              System <span className="text-primary">Settings</span>
+            </h1>
+            <p className="text-muted-foreground text-lg font-medium mt-1">
+              Global configuration and platform statistics.
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* System Statistics */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-l-4 border-l-primary">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalUsers}</div>
-            <p className="text-xs text-muted-foreground">Registered users</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-secondary">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-            <Users className="h-4 w-4 text-secondary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalStudents}</div>
-            <p className="text-xs text-muted-foreground">In database</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-accent">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Events</CardTitle>
-            <Palette className="h-4 w-4 text-accent" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalEvents}</div>
-            <p className="text-xs text-muted-foreground">Events available</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-primary">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Registrations</CardTitle>
-            <SettingsIcon className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalRegistrations}</div>
-            <p className="text-xs text-muted-foreground">Total registrations</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Registration Limits */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <SettingsIcon className="h-5 w-5" />
-            Registration Limits
-          </CardTitle>
-          <CardDescription>
-            Set the maximum number of events a student can register for
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {loading ? (
-            <div className="space-y-4">
-              <div className="animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
-                <div className="h-10 bg-gray-200 rounded"></div>
-              </div>
-              <div className="animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
-                <div className="h-10 bg-gray-200 rounded"></div>
-              </div>
+      {/* Bento Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+        {/* Stats Row */}
+        <Card className="md:col-span-3 border-border/50 bg-card shadow-sm hover:shadow-md p-6 flex flex-col justify-between h-[160px] rounded-[2rem]">
+          <div className="flex justify-between items-start">
+            <div className="p-3 rounded-2xl bg-muted/50 text-foreground">
+              <Users className="h-6 w-6" />
             </div>
-          ) : (
-            <>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="maxOnStageRegistrations">
-                    Maximum On-Stage Registrations per Student
-                  </Label>
-                  <Input
-                    id="maxOnStageRegistrations"
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={settings.maxOnStageRegistrations}
-                    onChange={(e) => setSettings(prev => ({
-                      ...prev,
-                      maxOnStageRegistrations: parseInt(e.target.value) || 1
-                    }))}
-                    disabled={saving}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Students can register for up to this many on-stage events
-                  </p>
-                </div>
+            <Badge variant="secondary" className="bg-muted text-muted-foreground border-none font-bold">Total</Badge>
+          </div>
+          <div>
+            <div className="text-4xl font-black text-foreground">{stats.totalUsers}</div>
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mt-1">Registered Users</p>
+          </div>
+        </Card>
 
-                <div className="space-y-2">
-                  <Label htmlFor="maxOffStageRegistrations">
-                    Maximum Off-Stage Registrations per Student
-                  </Label>
-                  <Input
-                    id="maxOffStageRegistrations"
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={settings.maxOffStageRegistrations}
-                    onChange={(e) => setSettings(prev => ({
-                      ...prev,
-                      maxOffStageRegistrations: parseInt(e.target.value) || 1
-                    }))}
-                    disabled={saving}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Students can register for up to this many off-stage events
-                  </p>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Auto Approve Setting */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="autoApprove">Auto Approve Registrations</Label>
-                    <p className="text-sm text-muted-foreground">
-                      When enabled, all new registrations will be automatically approved
-                    </p>
-                  </div>
-                  <Switch
-                    id="autoApprove"
-                    checked={settings.autoApproveRegistrations}
-                    onCheckedChange={(checked) => setSettings(prev => ({
-                      ...prev,
-                      autoApproveRegistrations: checked
-                    }))}
-                    disabled={saving}
-                  />
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Sign Up Setting */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="signUpEnabled">Enable User Sign Up</Label>
-                    <p className="text-sm text-muted-foreground">
-                      When enabled, new users can create accounts through the sign-up form
-                    </p>
-                  </div>
-                  <Switch
-                    id="signUpEnabled"
-                    checked={settings.signUpEnabled}
-                    onCheckedChange={(checked) => setSettings(prev => ({
-                      ...prev,
-                      signUpEnabled: checked
-                    }))}
-                    disabled={saving}
-                  />
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="flex justify-end">
-                <Button 
-                  onClick={saveSettings}
-                  disabled={saving}
-                  className="bg-gradient-to-r from-primary to-secondary"
-                >
-                  {saving ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Save Settings
-                    </>
-                  )}
-                </Button>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Additional Settings Card for Future Features */}
-      <Card>
-        <CardHeader>
-          <CardTitle>System Information</CardTitle>
-          <CardDescription>
-            Current system configuration and status
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <h4 className="font-medium mb-2">Database Status</h4>
-              <p className="text-sm text-muted-foreground">Connected and operational</p>
+        <Card className="md:col-span-3 border-border/50 bg-card shadow-sm hover:shadow-md p-6 flex flex-col justify-between h-[160px] rounded-[2rem]">
+          <div className="flex justify-between items-start">
+            <div className="p-3 rounded-2xl bg-indigo-500/10 text-indigo-500">
+              <Users className="h-6 w-6" />
             </div>
-            <div>
-              <h4 className="font-medium mb-2">Last Updated</h4>
-              <p className="text-sm text-muted-foreground">
-                {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
-              </p>
+            <Badge variant="secondary" className="bg-indigo-500/10 text-indigo-500 border-none font-bold">Active</Badge>
+          </div>
+          <div>
+            <div className="text-4xl font-black text-foreground">{stats.totalStudents}</div>
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mt-1">Students</p>
+          </div>
+        </Card>
+
+        <Card className="md:col-span-3 border-border/50 bg-card shadow-sm hover:shadow-md p-6 flex flex-col justify-between h-[160px] rounded-[2rem]">
+          <div className="flex justify-between items-start">
+            <div className="p-3 rounded-2xl bg-orange-500/10 text-orange-500">
+              <Palette className="h-6 w-6" />
+            </div>
+            <Badge variant="secondary" className="bg-orange-500/10 text-orange-500 border-none font-bold">Live</Badge>
+          </div>
+          <div>
+            <div className="text-4xl font-black text-foreground">{stats.totalEvents}</div>
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mt-1">Total Events</p>
+          </div>
+        </Card>
+
+        <Card className="md:col-span-3 border-none bg-primary text-primary-foreground shadow-lg shadow-primary/20 p-6 flex flex-col justify-between h-[160px] rounded-[2rem]">
+          <div className="flex justify-between items-start">
+            <div className="p-3 rounded-2xl bg-white/20 text-white">
+              <SettingsIcon className="h-6 w-6" />
             </div>
           </div>
-        </CardContent>
-      </Card>
+          <div>
+            <div className="text-4xl font-black text-white">{stats.totalRegistrations}</div>
+            <p className="text-xs font-bold uppercase tracking-wider text-white/50 mt-1">Registrations</p>
+          </div>
+        </Card>
+
+        {/* Configuration Section */}
+
+        {/* Registration Limits (8 cols) */}
+        <Card className="md:col-span-8 border-border/50 bg-card shadow-sm hover:shadow-md p-8 flex flex-col justify-center min-h-[300px] rounded-[2rem]">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="h-12 w-12 rounded-[1.5rem] bg-muted flex items-center justify-center text-foreground">
+              <SettingsIcon className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-foreground">Global Thresholds</h3>
+              <p className="text-sm font-medium text-muted-foreground">Set system-wide limits for user engagement.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-12">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">On-Stage Max</Label>
+                <span className="text-2xl font-black text-primary">{settings.maxOnStageRegistrations}</span>
+              </div>
+              <Input
+                type="range"
+                min="1"
+                max="10"
+                value={settings.maxOnStageRegistrations}
+                onChange={(e) => setSettings(prev => ({ ...prev, maxOnStageRegistrations: parseInt(e.target.value) || 1 }))}
+                className="w-full accent-primary h-2 bg-muted rounded-lg appearance-none cursor-pointer"
+                disabled={saving}
+              />
+            </div>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Off-Stage Max</Label>
+                <span className="text-2xl font-black text-indigo-500">{settings.maxOffStageRegistrations}</span>
+              </div>
+              <Input
+                type="range"
+                min="1"
+                max="10"
+                value={settings.maxOffStageRegistrations}
+                onChange={(e) => setSettings(prev => ({ ...prev, maxOffStageRegistrations: parseInt(e.target.value) || 1 }))}
+                className="w-full accent-indigo-500 h-2 bg-muted rounded-lg appearance-none cursor-pointer"
+                disabled={saving}
+              />
+            </div>
+          </div>
+        </Card>
+
+        {/* Toggles (4 cols) */}
+        <div className="md:col-span-4 flex flex-col gap-6">
+          <Card className="border-border/50 bg-card shadow-sm hover:shadow-md p-6 flex-1 flex flex-col justify-between rounded-[2rem]">
+            <div className="flex justify-between items-start">
+              <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${settings.autoApproveRegistrations ? 'bg-emerald-500/10 text-emerald-500' : 'bg-muted text-muted-foreground'}`}>
+                <Users className="h-5 w-5" />
+              </div>
+              <Switch
+                checked={settings.autoApproveRegistrations}
+                onCheckedChange={(checked) => setSettings(prev => ({ ...prev, autoApproveRegistrations: checked }))}
+                disabled={saving}
+              />
+            </div>
+            <div className="mt-4">
+              <h3 className="text-lg font-bold text-foreground">Auto-Approval</h3>
+              <p className="text-xs font-medium text-muted-foreground">Instantly approve new registrations.</p>
+            </div>
+          </Card>
+
+          <Card className="border-border/50 bg-card shadow-sm hover:shadow-md p-6 flex-1 flex flex-col justify-between rounded-[2rem]">
+            <div className="flex justify-between items-start">
+              <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${settings.signUpEnabled ? 'bg-blue-500/10 text-blue-500' : 'bg-muted text-muted-foreground'}`}>
+                <Users className="h-5 w-5" />
+              </div>
+              <Switch
+                checked={settings.signUpEnabled}
+                onCheckedChange={(checked) => setSettings(prev => ({ ...prev, signUpEnabled: checked }))}
+                disabled={saving}
+              />
+            </div>
+            <div className="mt-4">
+              <h3 className="text-lg font-bold text-foreground">Public Sign-up</h3>
+              <p className="text-xs font-medium text-muted-foreground">Allow new users to register accounts.</p>
+            </div>
+          </Card>
+        </div>
+
+      </div>
+
+      <div className="flex justify-end pt-4">
+        <Button
+          onClick={saveSettings}
+          disabled={saving}
+          size="lg"
+          className="h-14 rounded-[2rem] px-12 font-bold uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+        >
+          {saving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-4 w-4" />
+              Save All Changes
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   );
 }

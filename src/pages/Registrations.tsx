@@ -12,6 +12,7 @@ import { USER_ROLES } from '@/lib/constants';
 import { hasRole, getCoordinatorYear } from '@/lib/roleUtils';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { logActivity } from '@/lib/logger';
 import { PDFDownloadButton } from '@/components/PDFDownloadButton';
 import { RegistrationLimitBadge } from '@/components/ui/registration-limit-badge';
 import { getStudentRegistrationInfo, fetchRegistrationLimits } from '@/lib/registration-limits';
@@ -79,7 +80,7 @@ export default function Registrations() {
         `);
 
       // Role-based filtering
-      if (!hasRole(activeRole, USER_ROLES.ADMIN)) {
+      if (!hasRole(activeRole, USER_ROLES.ADMIN) && !hasRole(activeRole, USER_ROLES.EVENT_MANAGER)) {
         const year = getCoordinatorYear(activeRole);
         if (year) {
           query = query.eq('student.year', year);
@@ -91,8 +92,8 @@ export default function Registrations() {
       if (error) throw error;
       setRegistrations(data || []);
 
-      // Fetch registration limits and student counts for admin
-      if (hasRole(activeRole, USER_ROLES.ADMIN)) {
+      // Fetch registration limits and student counts for admin and event manager
+      if (hasRole(activeRole, USER_ROLES.ADMIN) || hasRole(activeRole, USER_ROLES.EVENT_MANAGER)) {
         await Promise.all([
           fetchRegistrationLimitsData(),
           fetchStudentRegistrationCounts(data || [])
@@ -169,14 +170,17 @@ export default function Registrations() {
       if (error) throw error;
 
       // Log activity
-      await supabase.from('activity_logs').insert({
-        user_id: profile?.id,
-        action: 'registration_status_updated',
-        details: {
+      // Log activity
+      await logActivity(
+        profile?.id,
+        'registration_status_updated',
+        {
           registration_id: registrationId,
           new_status: newStatus,
-        },
-      });
+          previous_status: 'unknown', // Ideally we fetch previous status, but keeping simple for now
+          registration_data: { id: registrationId, status: newStatus }
+        }
+      );
 
       toast({
         title: 'Success',
@@ -268,32 +272,32 @@ export default function Registrations() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'approved':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+        return 'bg-emerald-500/10 text-emerald-600 border-emerald-200/50';
       case 'rejected':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+        return 'bg-red-500/10 text-red-600 border-red-200/50';
       default:
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+        return 'bg-amber-500/10 text-amber-600 border-amber-200/50';
     }
   };
 
   const getCategoryColor = (category: string) => {
-    return category === 'on_stage' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' :
-      'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300';
+    return category === 'on_stage' ? 'bg-purple-500/10 text-purple-600 border-purple-200/50' :
+      'bg-amber-500/10 text-amber-600 border-amber-200/50';
   };
 
   const groupedData = getGroupedData();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-background">
       <div className="p-4 sm:p-6 lg:p-8 space-y-6">
         {/* Modern Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary to-primary/80 p-6 sm:p-8 text-white">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary to-secondary p-6 sm:p-8 text-white">
           <div className="absolute inset-0 bg-black/10"></div>
           <div className="relative z-10">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="min-w-0 flex-1">
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">
-                  {hasRole(activeRole, USER_ROLES.ADMIN) ? 'All Registrations' : 'Registration Details'}
+                  {(hasRole(activeRole, USER_ROLES.ADMIN) || hasRole(activeRole, USER_ROLES.EVENT_MANAGER)) ? 'All Registrations' : 'Registration Details'}
                 </h1>
                 <p className="text-white/90 text-sm sm:text-base">
                   Manage events event registrations
@@ -348,14 +352,14 @@ export default function Registrations() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
                     placeholder="Search by student name, roll number, or event..."
-                    className="pl-10 h-11 bg-white/50 border-0 shadow-sm focus:bg-white transition-colors"
+                    className="pl-10 h-11 bg-card border-border/50 shadow-sm focus:bg-card transition-colors"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
 
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full sm:w-[140px] h-11 bg-white/50 border-0 shadow-sm focus:bg-white transition-colors">
+                  <SelectTrigger className="w-full sm:w-[140px] h-11 bg-card border-border/50 shadow-sm focus:bg-card transition-colors">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -375,13 +379,13 @@ export default function Registrations() {
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <Card key={i} className="animate-pulse border-0 shadow-lg">
                 <CardHeader>
-                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-4 bg-muted rounded w-3/4"></div>
+                  <div className="h-3 bg-muted rounded w-1/2"></div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    <div className="h-3 bg-gray-200 rounded"></div>
-                    <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                    <div className="h-3 bg-muted rounded"></div>
+                    <div className="h-3 bg-muted rounded w-5/6"></div>
                   </div>
                 </CardContent>
               </Card>
@@ -423,7 +427,7 @@ export default function Registrations() {
                             <span className="truncate">{student.department}</span>
                           </div>
                           {/* Registration Limit Badges for Admin */}
-                          {hasRole(activeRole, USER_ROLES.ADMIN) && (
+                          {(hasRole(activeRole, USER_ROLES.ADMIN) || hasRole(activeRole, USER_ROLES.EVENT_MANAGER)) && (
                             <div className="flex gap-2 mt-2">
                               <RegistrationLimitBadge
                                 currentCount={studentRegistrationCounts[student.id]?.onStage || 0}
@@ -474,7 +478,7 @@ export default function Registrations() {
                             </div>
 
                             <div className="flex items-center justify-end gap-2 mt-3 pt-2 border-t">
-                              {hasRole(activeRole, USER_ROLES.ADMIN) && registration.status === 'pending' && (
+                              {(hasRole(activeRole, USER_ROLES.ADMIN) || hasRole(activeRole, USER_ROLES.EVENT_MANAGER)) && registration.status === 'pending' && (
                                 <>
                                   <Button
                                     size="sm"

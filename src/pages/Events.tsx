@@ -107,9 +107,9 @@ export default function Events() {
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case EVENT_CATEGORIES.ON_STAGE: return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
-      case EVENT_CATEGORIES.OFF_STAGE: return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+      case EVENT_CATEGORIES.ON_STAGE: return 'bg-purple-500/10 text-purple-600 border-purple-200/50';
+      case EVENT_CATEGORIES.OFF_STAGE: return 'bg-amber-500/10 text-amber-600 border-amber-200/50';
+      default: return 'bg-muted text-muted-foreground border-border/50';
     }
   };
 
@@ -133,7 +133,7 @@ export default function Events() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+    <div className="min-h-screen bg-background">
       <div className="p-4 sm:p-6 lg:p-8 space-y-6">
         {/* Header */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary to-secondary p-6 sm:p-8 text-white shadow-lg">
@@ -149,7 +149,7 @@ export default function Events() {
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                {hasRole(activeRole, USER_ROLES.ADMIN) && (
+                {(hasRole(activeRole, USER_ROLES.ADMIN) || hasRole(activeRole, USER_ROLES.EVENT_MANAGER)) && (
                   <CreateEventDialog onEventCreated={handleEventUpdate} />
                 )}
               </div>
@@ -158,7 +158,7 @@ export default function Events() {
         </div>
 
         {/* Filters */}
-        <Card className="border-0 shadow-sm">
+        <Card className="border-border/50 shadow-sm bg-card rounded-[2rem]">
           <CardContent className="p-4 sm:p-6">
             <div className="flex flex-col gap-4">
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
@@ -166,7 +166,7 @@ export default function Events() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
                     placeholder="Search events..."
-                    className="pl-10 h-11 bg-white dark:bg-slate-950"
+                    className="pl-10 h-11 bg-background border-border"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -203,23 +203,23 @@ export default function Events() {
         {loading ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-64 bg-slate-200 dark:bg-slate-800 rounded-xl animate-pulse" />
+              <div key={i} className="h-64 bg-muted rounded-[2rem] animate-pulse" />
             ))}
           </div>
         ) : filteredEvents.length === 0 ? (
-          <div className="text-center py-20 bg-white dark:bg-slate-800 rounded-2xl border shadow-sm">
+          <div className="text-center py-20 bg-card rounded-[2rem] border border-border/50 shadow-sm">
             <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-20" />
-            <h3 className="text-xl font-semibold">No events found</h3>
+            <h3 className="text-xl font-semibold text-foreground">No events found</h3>
             <p className="text-muted-foreground">Try adjusting your filters or check back later.</p>
           </div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredEvents.map((event) => (
-              <Card key={event.id} className="border-0 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col">
-                <div className="p-5 flex-1 flex flex-col space-y-4">
+              <Card key={event.id} className="border-border/50 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col bg-card rounded-[2rem]">
+                <div className="p-6 flex-1 flex flex-col space-y-4">
                   <div className="flex justify-between items-start gap-2">
                     <div className="space-y-1 min-w-0">
-                      <h3 className="font-bold text-lg leading-tight truncate">{event.name}</h3>
+                      <h3 className="font-bold text-lg leading-tight truncate text-foreground">{event.name}</h3>
                       <div className="flex gap-2 flex-wrap">
                         <Badge className={`${getCategoryColor(event.category)} border-0`}>
                           {event.category?.replace('_', '-') || 'Event'}
@@ -229,7 +229,7 @@ export default function Events() {
                         </Badge>
                       </div>
                     </div>
-                    {hasRole(activeRole, USER_ROLES.ADMIN) && (
+                    {(hasRole(activeRole, USER_ROLES.ADMIN) || hasRole(activeRole, USER_ROLES.EVENT_MANAGER)) && (
                       <EditEventDialog
                         event={event}
                         onEventUpdated={handleEventUpdate}
@@ -259,7 +259,7 @@ export default function Events() {
                     )}
                   </div>
 
-                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <div className="pt-4 border-t border-border/50">
                     {!hasRole(activeRole, USER_ROLES.STUDENT) && (
                       <RegistrationStats
                         eventId={event.id}

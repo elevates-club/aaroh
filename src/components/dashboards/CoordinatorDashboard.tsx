@@ -13,7 +13,11 @@ import {
     UserX,
     ArrowRight,
     Palette,
-    GraduationCap
+    GraduationCap,
+    Zap,
+    Shield,
+    Target,
+    LayoutDashboard
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,7 +26,7 @@ import { useRole } from '@/contexts/RoleContext';
 import { USER_ROLES, getYearLabel } from '@/lib/constants';
 import { hasRole, getCoordinatorYear as getYearFromRole } from '@/lib/roleUtils';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 
 interface EventAtLimit {
     id: string;
@@ -67,6 +71,21 @@ export function CoordinatorDashboard() {
     const coordinatorYear = getYearFromRole(activeRole);
 
     useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            const cards = document.getElementsByClassName('bento-card');
+            for (const card of cards as any) {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                card.style.setProperty('--mouse-x', `${x}px`);
+                card.style.setProperty('--mouse-y', `${y}px`);
+            }
+        };
+        window.addEventListener('mousemove', handleMouseMove);
+        return () => window.removeEventListener('mousemove', handleMouseMove);
+    }, []);
+
+    useEffect(() => {
         fetchAllData();
     }, [activeRole]);
 
@@ -85,37 +104,15 @@ export function CoordinatorDashboard() {
     };
 
     const fetchBasicStats = async (year: 'first' | 'second' | 'third' | 'fourth') => {
-        // Students in my year
-        const { count: studentsCount } = await supabase
-            .from('students')
-            .select('id', { count: 'exact' })
-            .eq('year', year);
-
-        // Active events
-        const { count: eventsCount } = await supabase
-            .from('events')
-            .select('id', { count: 'exact' })
-            .eq('is_active', true);
-
-        // My year registrations
-        const { data: regData } = await supabase
-            .from('registrations')
-            .select(`id, status, student:students!inner(year)`)
-            .eq('student.year', year);
+        const { count: studentsCount } = await supabase.from('students').select('id', { count: 'exact' }).eq('year', year);
+        const { count: eventsCount } = await supabase.from('events').select('id', { count: 'exact' }).eq('is_active', true);
+        const { data: regData } = await supabase.from('registrations').select(`id, status, student:students!inner(year)`).eq('student.year', year);
 
         const registrationsCount = regData?.length || 0;
         const pendingCount = regData?.filter(r => r.status === 'pending').length || 0;
 
-        // Unregistered students - students with no registrations
-        const { data: allStudents } = await supabase
-            .from('students')
-            .select('id')
-            .eq('year', year);
-
-        const { data: registeredStudents } = await supabase
-            .from('registrations')
-            .select(`student_id, student:students!inner(year)`)
-            .eq('student.year', year);
+        const { data: allStudents } = await supabase.from('students').select('id').eq('year', year);
+        const { data: registeredStudents } = await supabase.from('registrations').select(`student_id, student:students!inner(year)`).eq('student.year', year);
 
         const registeredIds = new Set(registeredStudents?.map(r => r.student_id) || []);
         const unregisteredCount = (allStudents?.length || 0) - registeredIds.size;
@@ -130,348 +127,221 @@ export function CoordinatorDashboard() {
     };
 
     const fetchEventsAtLimit = async (year: 'first' | 'second' | 'third' | 'fourth') => {
-        // Get events with max_entries_per_year set
-        const { data: events } = await supabase
-            .from('events')
-            .select('id, name, category, max_entries_per_year')
-            .eq('is_active', true)
-            .not('max_entries_per_year', 'is', null);
-
+        const { data: events } = await supabase.from('events').select('id, name, category, max_entries_per_year').eq('is_active', true).not('max_entries_per_year', 'is', null);
         if (!events) return;
-
         const limitedEvents: EventAtLimit[] = [];
-
         for (const event of events) {
-            const { data: regs } = await supabase
-                .from('registrations')
-                .select(`id, student:students!inner(year)`)
-                .eq('event_id', event.id)
-                .eq('student.year', year)
-                .neq('status', 'rejected');
-
+            const { data: regs } = await supabase.from('registrations').select(`id, student:students!inner(year)`).eq('event_id', event.id).eq('student.year', year).neq('status', 'rejected');
             const currentCount = regs?.length || 0;
             const limit = event.max_entries_per_year || 999;
-
-            if (currentCount >= limit * 0.8) { // Show if >= 80% full
-                limitedEvents.push({
-                    id: event.id,
-                    name: event.name,
-                    category: event.category as 'on_stage' | 'off_stage',
-                    max_entries_per_year: limit,
-                    currentCount,
-                });
+            if (currentCount >= limit * 0.8) {
+                limitedEvents.push({ id: event.id, name: event.name, category: event.category as 'on_stage' | 'off_stage', max_entries_per_year: limit, currentCount });
             }
         }
-
-        setEventsAtLimit(limitedEvents.sort((a, b) =>
-            (b.currentCount / b.max_entries_per_year) - (a.currentCount / a.max_entries_per_year)
-        ));
+        setEventsAtLimit(limitedEvents.sort((a, b) => (b.currentCount / b.max_entries_per_year) - (a.currentCount / a.max_entries_per_year)));
     };
 
     const fetchRecentRegistrations = async (year: 'first' | 'second' | 'third' | 'fourth') => {
-        const { data } = await supabase
-            .from('registrations')
-            .select(`
-                id,
-                status,
-                created_at,
-                student:students!inner(name, year),
-                event:events!inner(name)
-            `)
-            .eq('student.year', year)
-            .order('created_at', { ascending: false })
-            .limit(5);
-
+        const { data } = await supabase.from('registrations').select(`id, status, created_at, student:students!inner(name, year), event:events!inner(name)`).eq('student.year', year).order('created_at', { ascending: false }).limit(5);
         if (data) {
-            setRecentRegistrations(data.map((r: any) => ({
-                id: r.id,
-                studentName: r.student.name,
-                eventName: r.event.name,
-                status: r.status,
-                createdAt: r.created_at,
-            })));
+            setRecentRegistrations(data.map((r: any) => ({ id: r.id, studentName: r.student.name, eventName: r.event.name, status: r.status, createdAt: r.created_at })));
         }
     };
 
     const fetchTopEvents = async (year: 'first' | 'second' | 'third' | 'fourth') => {
-        const { data } = await supabase
-            .from('registrations')
-            .select(`
-                event_id,
-                student:students!inner(year),
-                event:events!inner(id, name, category)
-            `)
-            .eq('student.year', year);
-
+        const { data } = await supabase.from('registrations').select(`event_id, student:students!inner(year), event:events!inner(id, name, category)`).eq('student.year', year);
         if (data) {
             const eventCounts: Record<string, { name: string; category: string; count: number }> = {};
-
             data.forEach((r: any) => {
                 const eventId = r.event_id;
                 if (!eventCounts[eventId]) {
-                    eventCounts[eventId] = {
-                        name: r.event.name,
-                        category: r.event.category,
-                        count: 0
-                    };
+                    eventCounts[eventId] = { name: r.event.name, category: r.event.category, count: 0 };
                 }
                 eventCounts[eventId].count++;
             });
-
-            const sorted = Object.entries(eventCounts)
-                .map(([id, info]) => ({ id, ...info }))
-                .sort((a, b) => b.count - a.count)
-                .slice(0, 5) as TopEvent[];
-
+            const sorted = Object.entries(eventCounts).map(([id, info]) => ({ id, ...info })).sort((a, b) => b.count - a.count).slice(0, 5) as TopEvent[];
             setTopEvents(sorted);
         }
     };
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'approved': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-            case 'pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
-            case 'rejected': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
-            default: return 'bg-gray-100 text-gray-800';
-        }
-    };
-
     return (
-        <div className="p-6 space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                    Welcome, {profile?.full_name || 'Coordinator'}!
-                </h1>
-                <p className="text-muted-foreground mt-1">
-                    {coordinatorYear ? `${getYearLabel(coordinatorYear)} Year` : 'Year'} Coordinator Dashboard
-                </p>
-            </div>
+        <div className="p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1600px] mx-auto">
+            {/* Simple Light Header */}
+            <header className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="space-y-1">
+                    <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                        {coordinatorYear ? `${getYearLabel(coordinatorYear)} Year` : 'Year'} Coordinator
+                    </h1>
+                    <p className="text-muted-foreground text-sm font-medium">
+                        Yearly Event Management
+                    </p>
+                </div>
 
-            {/* Main Stats */}
-            <div className="grid gap-4 md:grid-cols-5">
-                <Card className="border-l-4 border-l-primary">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">My Year Students</CardTitle>
-                        <Users className="h-4 w-4 text-primary" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.myYearStudents}</div>
-                        <p className="text-xs text-muted-foreground">Total students</p>
-                    </CardContent>
-                </Card>
-
-                <Card className="border-l-4 border-l-secondary">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Active Events</CardTitle>
-                        <Calendar className="h-4 w-4 text-secondary" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.activeEvents}</div>
-                        <p className="text-xs text-muted-foreground">Ongoing events</p>
-                    </CardContent>
-                </Card>
-
-                <Card className="border-l-4 border-l-green-500">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Registrations</CardTitle>
-                        <Award className="h-4 w-4 text-green-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.myRegistrations}</div>
-                        <p className="text-xs text-muted-foreground">Total registrations</p>
-                    </CardContent>
-                </Card>
-
-                <Card className="border-l-4 border-l-yellow-500 cursor-pointer hover:bg-muted/50 transition" onClick={() => navigate('/registrations')}>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Pending</CardTitle>
-                        <Clock className="h-4 w-4 text-yellow-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-yellow-600">{stats.pendingApprovals}</div>
-                        <p className="text-xs text-muted-foreground">Awaiting approval</p>
-                    </CardContent>
-                </Card>
-
-                <Card className="border-l-4 border-l-red-400">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Unregistered</CardTitle>
-                        <UserX className="h-4 w-4 text-red-400" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-red-500">{stats.unregisteredStudents}</div>
-                        <p className="text-xs text-muted-foreground">No registrations yet</p>
-                    </CardContent>
-                </Card>
-            </div>
-
-            {/* Second Row: Events at Limit & Top Events */}
-            <div className="grid gap-4 md:grid-cols-2">
-                {/* Events at Year Limit */}
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-base flex items-center gap-2">
-                            <AlertTriangle className="h-4 w-4 text-amber-500" />
-                            Events at Year Limit
-                        </CardTitle>
-                        <CardDescription>Events approaching or at capacity for your year</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {eventsAtLimit.length === 0 ? (
-                            <p className="text-sm text-muted-foreground text-center py-4">
-                                No events at capacity yet 🎉
-                            </p>
-                        ) : (
-                            <ScrollArea className="h-[200px]">
-                                <div className="space-y-3">
-                                    {eventsAtLimit.map(event => (
-                                        <div key={event.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                                            <div className="flex items-center gap-2">
-                                                {event.category === 'on_stage' ? (
-                                                    <Palette className="h-4 w-4 text-purple-500" />
-                                                ) : (
-                                                    <GraduationCap className="h-4 w-4 text-green-500" />
-                                                )}
-                                                <span className="font-medium text-sm">{event.name}</span>
-                                            </div>
-                                            <Badge
-                                                variant={event.currentCount >= event.max_entries_per_year ? 'destructive' : 'secondary'}
-                                                className="font-mono"
-                                            >
-                                                {event.currentCount}/{event.max_entries_per_year}
-                                            </Badge>
-                                        </div>
-                                    ))}
-                                </div>
-                            </ScrollArea>
-                        )}
-                    </CardContent>
-                </Card>
-
-                {/* Top Events */}
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-base flex items-center gap-2">
-                            <Trophy className="h-4 w-4 text-yellow-500" />
-                            Top Events
-                        </CardTitle>
-                        <CardDescription>Most popular events for your year</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {topEvents.length === 0 ? (
-                            <p className="text-sm text-muted-foreground text-center py-4">
-                                No registrations yet
-                            </p>
-                        ) : (
-                            <ScrollArea className="h-[200px]">
-                                <div className="space-y-3">
-                                    {topEvents.map((event, index) => (
-                                        <div key={event.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                                            <div className="flex items-center gap-3">
-                                                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${index === 0 ? 'bg-yellow-100 text-yellow-700' :
-                                                    index === 1 ? 'bg-gray-200 text-gray-700' :
-                                                        index === 2 ? 'bg-amber-100 text-amber-700' : 'bg-muted text-muted-foreground'
-                                                    }`}>
-                                                    {index + 1}
-                                                </span>
-                                                <div className="flex items-center gap-2">
-                                                    {event.category === 'on_stage' ? (
-                                                        <Palette className="h-4 w-4 text-purple-500" />
-                                                    ) : (
-                                                        <GraduationCap className="h-4 w-4 text-green-500" />
-                                                    )}
-                                                    <span className="font-medium text-sm">{event.name}</span>
-                                                </div>
-                                            </div>
-                                            <Badge variant="outline">{event.count} students</Badge>
-                                        </div>
-                                    ))}
-                                </div>
-                            </ScrollArea>
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
-
-            {/* Recent Activity */}
-            <Card>
-                <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle className="text-base flex items-center gap-2">
-                                <Activity className="h-4 w-4 text-blue-500" />
-                                Recent Activity
-                            </CardTitle>
-                            <CardDescription>Latest registrations from your year</CardDescription>
+                <div className="flex items-center gap-4 bg-card px-4 py-2 rounded-full shadow-sm border border-border/50">
+                    <div className="flex items-center gap-3 pr-4 border-r border-border/50">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
+                            {profile?.full_name?.charAt(0) || 'C'}
                         </div>
-                        <Button variant="ghost" size="sm" onClick={() => navigate('/registrations')}>
-                            View All <ArrowRight className="ml-1 h-4 w-4" />
-                        </Button>
+                        <div className="text-sm">
+                            <p className="font-bold leading-none text-foreground">{profile?.full_name?.split(' ')[0]}</p>
+                            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Coordinator</p>
+                        </div>
                     </div>
-                </CardHeader>
-                <CardContent>
-                    {recentRegistrations.length === 0 ? (
-                        <p className="text-sm text-muted-foreground text-center py-4">
-                            No recent registrations
+                    <Button className="h-8 rounded-full px-4 text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => navigate('/registrations')}>
+                        <Shield className="h-3 w-3 mr-2" /> Verify
+                    </Button>
+                </div>
+            </header>
+
+            {/* Simple Light Bento Grid */}
+            <div className="bento-grid">
+
+                {/* 1. COHORT MOMENTUM (8 Cols) */}
+                <Card className="md:col-span-8 md:row-span-2 border-none bg-primary text-primary-foreground shadow-lg shadow-primary/20 h-[380px] flex flex-col justify-between p-8 relative overflow-hidden group rounded-[2rem]">
+                    {/* Decorative background */}
+                    <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/10 rounded-full blur-[100px] -mr-32 -mt-32 pointer-events-none" />
+
+                    <div className="relative z-10 flex justify-between items-start">
+                        <Badge className="bg-white/20 hover:bg-white/30 text-white border-none font-bold uppercase tracking-wider text-[10px]">Registrations</Badge>
+                        <Target className="h-6 w-6 text-white/50" />
+                    </div>
+
+                    <div className="relative z-10 space-y-4">
+                        <p className="text-[8rem] font-bold tracking-tighter leading-none text-white">
+                            {stats.myRegistrations.toLocaleString()}
                         </p>
-                    ) : (
-                        <div className="space-y-3">
-                            {recentRegistrations.map(reg => (
-                                <div key={reg.id} className="flex items-center justify-between p-3 rounded-lg border">
-                                    <div className="space-y-1">
-                                        <p className="font-medium text-sm">{reg.studentName}</p>
-                                        <p className="text-xs text-muted-foreground">{reg.eventName}</p>
+                        <p className="text-lg text-white/80 font-medium">Total Year Registrations</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-8 mt-auto relative z-10 border-t border-white/20 pt-8">
+                        <div>
+                            <p className="text-3xl font-bold text-white">{stats.pendingApprovals}</p>
+                            <p className="text-xs text-white/60 font-semibold uppercase tracking-wider mt-1">Pending Review</p>
+                        </div>
+                        <div>
+                            <p className="text-3xl font-bold text-white">{stats.unregisteredStudents}</p>
+                            <p className="text-xs text-white/60 font-semibold uppercase tracking-wider mt-1">Not Yet Registered</p>
+                        </div>
+                    </div>
+                </Card>
+
+                {/* 2. BASELINE DATA (4 Cols) */}
+                <Card className="md:col-span-4 bento-card border-none shadow-sm hover:shadow-md transition-shadow h-[180px] flex flex-col justify-between p-6">
+                    <div className="flex justify-between items-start">
+                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center border border-border/50">
+                            <GraduationCap className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                    </div>
+                    <div>
+                        <p className="text-4xl font-extrabold tracking-tight text-foreground">{stats.myYearStudents}</p>
+                        <p className="text-sm font-medium text-muted-foreground mt-1">Total Students</p>
+                    </div>
+                </Card>
+
+                {/* 3. SYNC NAV (4 Cols) */}
+                <Card className={`md:col-span-4 bento-card border-none shadow-sm hover:shadow-md transition-shadow h-[180px] flex flex-col justify-between p-6 cursor-pointer group ${loading ? 'opacity-70 pointer-events-none' : ''}`} onClick={() => fetchAllData()}>
+                    <div className="flex justify-between items-start">
+                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center border border-border/50 group-hover:bg-primary/10 transition-colors">
+                            <Activity className={`h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors ${loading ? 'animate-spin' : ''}`} />
+                        </div>
+                        <ArrowRight className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+                    </div>
+                    <div>
+                        <p className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">{loading ? 'Syncing...' : 'Refresh'}</p>
+                        <p className="text-sm font-medium text-muted-foreground mt-1">{loading ? 'Updating Dashboard...' : 'Sync Latest Data'}</p>
+                    </div>
+                </Card>
+
+                {/* 4. CAPACITY GUARD (12 Cols) */}
+                <Card className="md:col-span-12 bento-card border-none shadow-sm p-8 h-auto bg-card">
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                            <Shield className="h-5 w-5 text-amber-500" />
+                            <h3 className="text-lg font-bold text-foreground">Limit Reminder</h3>
+                        </div>
+                        {eventsAtLimit.length === 0 && (
+                            <Badge variant="outline" className="text-emerald-600 bg-emerald-500/10 border-emerald-500/20">All Clear</Badge>
+                        )}
+                    </div>
+
+                    <div className="space-y-4">
+                        {eventsAtLimit.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {eventsAtLimit.map(e => (
+                                    <div key={e.id} className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col gap-2">
+                                        <div className="flex justify-between items-center">
+                                            <h3 className="text-sm font-bold text-amber-600">{e.name}</h3>
+                                            <span className="text-xs font-bold text-amber-600">{e.currentCount} / {e.max_entries_per_year}</span>
+                                        </div>
+                                        <div className="h-1.5 w-full bg-amber-500/20 rounded-full overflow-hidden">
+                                            <div
+                                                className={`h-full transition-all duration-1000 ${e.currentCount >= e.max_entries_per_year ? 'bg-destructive' : 'bg-amber-500'}`}
+                                                style={{ width: `${(e.currentCount / e.max_entries_per_year) * 100}%` }}
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                        <Badge className={getStatusColor(reg.status)}>{reg.status}</Badge>
-                                        <span className="text-xs text-muted-foreground">
-                                            {format(new Date(reg.createdAt), 'MMM dd, HH:mm')}
-                                        </span>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="p-6 rounded-2xl border-2 border-dashed border-border/50 text-center text-sm font-medium text-muted-foreground">
+                                No events have reached their limit.
+                            </div>
+                        )}
+                    </div>
+                </Card>
+
+                {/* 5. POPULARITY (6 Cols) */}
+                <Card className="md:col-span-6 bento-card border-none shadow-sm h-[400px] p-8 flex flex-col">
+                    <div className="flex items-center justify-between mb-8">
+                        <h3 className="text-lg font-bold text-foreground">Top Events</h3>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full"><Trophy className="h-4 w-4" /></Button>
+                    </div>
+                    <div className="flex-1 space-y-4">
+                        {topEvents.map((event, index) => (
+                            <div key={event.id} className="flex items-center justify-between group p-2 hover:bg-muted/50 rounded-xl transition-colors">
+                                <div className="flex items-center gap-4">
+                                    <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground">
+                                        {index + 1}
                                     </div>
+                                    <div className="space-y-0.5">
+                                        <p className="text-sm font-bold text-foreground">{event.name}</p>
+                                        <p className="text-[10px] uppercase font-bold text-muted-foreground opacity-60">{event.category.replace('_', ' ')}</p>
+                                    </div>
+                                </div>
+                                <Badge variant="secondary" className="font-bold">{event.count}</Badge>
+                            </div>
+                        ))}
+                    </div>
+                </Card>
+
+                {/* 6. COHORT AUDIT (6 Cols) */}
+                <Card className="md:col-span-6 bento-card border-none shadow-sm h-[400px] p-0 flex flex-col overflow-hidden">
+                    <div className="p-8 pb-4 flex items-center justify-between border-b border-border/50">
+                        <h3 className="text-lg font-bold text-foreground">Recent Activity</h3>
+                    </div>
+                    <ScrollArea className="flex-1 p-0">
+                        <div className="divide-y divide-border/50">
+                            {recentRegistrations.map((reg) => (
+                                <div key={reg.id} className="p-4 px-8 hover:bg-muted/50 transition-colors flex items-center justify-between group">
+                                    <div className="flex items-center gap-4">
+                                        <div className={`h-10 w-10 rounded-xl flex items-center justify-center font-bold text-xs ${reg.status === 'pending' ? 'bg-amber-500/10 text-amber-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
+                                            {reg.studentName.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-foreground">{reg.studentName}</p>
+                                            <p className="text-xs text-muted-foreground truncate w-40">{reg.eventName}</p>
+                                        </div>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                                        {formatDistanceToNow(new Date(reg.createdAt), { addSuffix: true })}
+                                    </span>
                                 </div>
                             ))}
                         </div>
-                    )}
-                </CardContent>
-            </Card>
+                    </ScrollArea>
+                </Card>
 
-            {/* Quick Actions */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-3">
-                    <Button
-                        variant="outline"
-                        className="h-auto p-4 flex flex-col items-start text-left"
-                        onClick={() => navigate('/students')}
-                    >
-                        <Users className="h-5 w-5 mb-2 text-primary" />
-                        <h3 className="font-medium">View My Students</h3>
-                        <p className="text-sm text-muted-foreground">Manage {getYearLabel(coordinatorYear || '')} year students</p>
-                    </Button>
-                    <Button
-                        variant="outline"
-                        className="h-auto p-4 flex flex-col items-start text-left"
-                        onClick={() => navigate('/events')}
-                    >
-                        <Calendar className="h-5 w-5 mb-2 text-secondary" />
-                        <h3 className="font-medium">Register Students</h3>
-                        <p className="text-sm text-muted-foreground">Register students for events</p>
-                    </Button>
-                    {stats.pendingApprovals > 0 && (
-                        <Button
-                            variant="outline"
-                            className="h-auto p-4 flex flex-col items-start text-left border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20"
-                            onClick={() => navigate('/registrations')}
-                        >
-                            <Clock className="h-5 w-5 mb-2 text-yellow-600" />
-                            <h3 className="font-medium">Approve Registrations</h3>
-                            <p className="text-sm text-muted-foreground">{stats.pendingApprovals} pending approvals</p>
-                        </Button>
-                    )}
-                </CardContent>
-            </Card>
+            </div>
         </div>
     );
 }
