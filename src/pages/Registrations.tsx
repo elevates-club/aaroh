@@ -5,6 +5,17 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileText, Search, Download, Users, Palette, Calendar, Edit, Trash2, Loader2, Building, MapPin, Clock, Eye } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRole } from '@/contexts/RoleContext';
@@ -199,10 +210,6 @@ export default function Registrations() {
   };
 
   const deleteRegistration = async (registrationId: string, studentName: string, eventName: string) => {
-    if (!confirm(`Are you sure you want to remove ${studentName} from ${eventName}?`)) {
-      return;
-    }
-
     try {
       setDeletingId(registrationId);
       const { error } = await supabase
@@ -509,19 +516,39 @@ export default function Registrations() {
                                   </Button>
                                 </>
                               )}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => deleteRegistration(registration.id, student.name, registration.event.name)}
-                                disabled={deletingId === registration.id}
-                                className="h-7 px-2 text-xs"
-                              >
-                                {deletingId === registration.id ? (
-                                  <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : (
-                                  <Trash2 className="h-3 w-3" />
-                                )}
-                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={deletingId === registration.id}
+                                    className="h-7 px-2 text-xs"
+                                  >
+                                    {deletingId === registration.id ? (
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="h-3 w-3" />
+                                    )}
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Remove Registration?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to remove <strong>{student.name}</strong> from <strong>{registration.event.name}</strong>? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => deleteRegistration(registration.id, student.name, registration.event.name)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Remove Registration
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </div>
                           </div>
                         ))}
@@ -616,19 +643,39 @@ export default function Registrations() {
                                 <Badge className={`${getStatusColor(registration.status)} text-xs`}>
                                   {registration.status}
                                 </Badge>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => deleteRegistration(registration.id, registration.student.name, event.name)}
-                                  disabled={deletingId === registration.id}
-                                  className="h-6 w-6 p-0"
-                                >
-                                  {deletingId === registration.id ? (
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                  ) : (
-                                    <Trash2 className="h-3 w-3" />
-                                  )}
-                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      disabled={deletingId === registration.id}
+                                      className="h-6 w-6 p-0"
+                                    >
+                                      {deletingId === registration.id ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : (
+                                        <Trash2 className="h-3 w-3" />
+                                      )}
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Remove Registration?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to remove <strong>{registration.student.name}</strong> from <strong>{event.name}</strong>? This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => deleteRegistration(registration.id, registration.student.name, event.name)}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      >
+                                        Remove Registration
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                               </div>
                             </div>
                           ))}
