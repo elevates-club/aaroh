@@ -235,51 +235,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       }
 
-      // Perform the actual sign-out
-      const { error } = await supabase.auth.signOut();
+      // Perform sign-out with timeout to prevent hanging
+      const signOutPromise = supabase.auth.signOut();
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Signout timeout')), 2000)
+      );
 
-      if (error) throw error;
-
-      // Clear state immediately
-      setUser(null);
-      setSession(null);
-      setProfile(null);
-      currentProfileIdRef.current = null;
-
-      // Clear session storage
-      if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('aaroh_session_logged_id');
+      try {
+        await Promise.race([signOutPromise, timeoutPromise]);
+      } catch (error) {
+        console.warn('Signout completed with error or timeout:', error);
       }
 
-      // Redirect to auth page
-      window.location.href = '/auth';
+    } catch (error) {
+      console.error('Error in signOut process:', error);
+    } finally {
+      // ALWAYS perform cleanup and redirect, regardless of API result
+      try {
+        if (typeof window !== 'undefined') {
+          sessionStorage.clear();
+          localStorage.clear(); // Aggressively clear everything
+        }
 
-    } catch (error: any) {
-      console.error('Error signing out:', error);
-
-      // If session is missing, we are already effectively signed out locally.
-      // Treat this as success for the user.
-      if (error.message === 'Auth session missing!') {
-        console.warn('Session was missing during signout - treating as success');
         setUser(null);
         setSession(null);
         setProfile(null);
+        currentProfileIdRef.current = null;
+        setSigningOut(false);
+
         window.location.href = '/auth';
-        return;
+      } catch (cleanupError) {
+        console.error('Error during cleanup:', cleanupError);
+        window.location.href = '/auth'; // Last resort
       }
-
-      setSigningOut(false);
-
-      toast({
-        title: 'Sign Out Failed',
-        description: error instanceof Error ? error.message : 'Please try again or refresh the page',
-        variant: 'destructive',
-      });
-
-      // Force a full page reload as fallback
-      setTimeout(() => {
-        window.location.href = '/auth';
-      }, 2000);
     }
   };
 

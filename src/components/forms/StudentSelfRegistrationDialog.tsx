@@ -95,14 +95,23 @@ export function StudentSelfRegistrationDialog({
             const currentCount = allRegs?.filter((r: any) => r.event.category === event.category).length || 0;
 
             // Get system limits
-            const limitKey = event.category === 'on_stage' ? 'max_game_registrations' : 'max_athletic_registrations';
-            const { data: limitData } = await supabase
+            const limitKey = event.category === 'on_stage' ? 'max_on_stage_registrations' : 'max_off_stage_registrations';
+            // Note: DB keys are 'max_on_stage_registrations' and 'max_off_stage_registrations'
+            // Previous code might have used incorrect keys like 'max_game_registrations'
+
+            const { data: limitData, error: limitError } = await supabase
                 .from('settings')
                 .select('value')
                 .eq('key', limitKey)
                 .maybeSingle();
 
-            const limit = (limitData?.value as any)?.limit || 3;
+            if (limitError) console.error('Error fetching limit:', limitError);
+
+            // Default fallbacks: 5 for On-Stage, 4 for Off-Stage (as per user dashboard stats)
+            const defaultLimit = event.category === 'on_stage' ? 5 : 4;
+            const limit = (limitData?.value as any)?.limit || defaultLimit;
+
+            console.log(`[Registration Check] Key: ${limitKey}, DB Limit: ${(limitData?.value as any)?.limit}, Applied: ${limit}`);
 
             if (currentCount >= limit) {
                 setLimitStatus({
