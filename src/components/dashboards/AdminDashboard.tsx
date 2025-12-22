@@ -193,7 +193,7 @@ export function AdminDashboard() {
                             {profile?.full_name?.charAt(0) || 'A'}
                         </div>
                         <div className="text-sm">
-                            <p className="font-bold leading-none text-foreground">{profile?.full_name?.split(' ')[0]}</p>
+                            <p className="font-bold leading-none text-foreground">{profile?.full_name ? profile.full_name.split(' ')[0] : 'Admin'}</p>
                             <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Administrator</p>
                         </div>
                     </div>

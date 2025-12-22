@@ -100,6 +100,7 @@ export function StudentDashboard() {
 
     // Real-time subscription for settings changes
     useEffect(() => {
+        console.log('[StudentDashboard] Setting up real-time subscription for settings');
         const channel = supabase
             .channel('settings-changes')
             .on(
@@ -111,15 +112,20 @@ export function StudentDashboard() {
                     // removed specific filter to ensure all settings updates are caught
                 },
                 (payload) => {
+                    console.log('[StudentDashboard] Settings changed!', payload);
                     // When settings change, refetch stats to get new limits
                     if (studentId) {
+                        console.log('[StudentDashboard] Refetching stats with new limits');
                         fetchStats();
                     }
                 }
             )
-            .subscribe();
+            .subscribe((status) => {
+                console.log('[StudentDashboard] Subscription status:', status);
+            });
 
         return () => {
+            console.log('[StudentDashboard] Cleaning up subscription');
             supabase.removeChannel(channel);
         };
     }, [studentId]);
@@ -139,14 +145,28 @@ export function StudentDashboard() {
 
     const fetchStats = async () => {
         if (!studentId) return;
-        const { data: settings } = await supabase.from('settings').select('key, value').in('key', ['max_on_stage_registrations', 'max_off_stage_registrations']);
+
+        console.log('[StudentDashboard] Fetching stats for student:', studentId);
+
+        const { data: settings, error: settingsError } = await supabase
+            .from('settings')
+            .select('key, value')
+            .in('key', ['max_on_stage_registrations', 'max_off_stage_registrations']);
+
+        console.log('[StudentDashboard] Settings fetched:', settings);
+        console.log('[StudentDashboard] Settings error:', settingsError);
+
         let onStageLimit = 5;
         let offStageLimit = 4;
         settings?.forEach(s => {
             const val = s.value as any;
+            console.log(`[StudentDashboard] Processing setting: ${s.key}, value:`, val, 'limit:', val?.limit);
             if (s.key === 'max_on_stage_registrations') onStageLimit = val?.limit || 5;
             if (s.key === 'max_off_stage_registrations') offStageLimit = val?.limit || 4;
         });
+
+        console.log('[StudentDashboard] Final limits - On-Stage:', onStageLimit, 'Off-Stage:', offStageLimit);
+
         const { data: registrations } = await supabase.from('registrations').select(`id, status, event:events!inner(category)`).eq('student_id', studentId);
         const approved = registrations?.filter(r => r.status === 'approved').length || 0;
         const pending = registrations?.filter(r => r.status === 'pending').length || 0;
@@ -219,7 +239,7 @@ export function StudentDashboard() {
                         My Dashboard
                     </h1>
                     <p className="text-muted-foreground text-sm font-medium">
-                        Welcome back, {profile?.full_name?.split(' ')[0]}
+                        Welcome back, {profile?.full_name ? profile.full_name.split(' ')[0] : 'Student'}
                     </p>
                 </div>
 
@@ -229,7 +249,7 @@ export function StudentDashboard() {
                             {profile?.full_name?.charAt(0) || 'S'}
                         </div>
                         <div className="text-sm">
-                            <p className="font-bold leading-none text-foreground">{profile?.full_name?.split(' ')[0]}</p>
+                            <p className="font-bold leading-none text-foreground">{profile?.full_name ? profile.full_name.split(' ')[0] : 'Student'}</p>
                             <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Student</p>
                         </div>
                     </div>

@@ -195,7 +195,7 @@ export function EventManagerDashboard() {
                             {profile?.full_name?.charAt(0) || 'E'}
                         </div>
                         <div className="text-sm">
-                            <p className="font-bold leading-none text-foreground">{profile?.full_name?.split(' ')[0]}</p>
+                            <p className="font-bold leading-none text-foreground">{profile?.full_name ? profile.full_name.split(' ')[0] : 'Manager'}</p>
                             <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Manager</p>
                         </div>
                     </div>

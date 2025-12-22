@@ -24,8 +24,16 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         if (availableRoles.length > 0) {
             // Set to first role if not already set or if current activeRole is not in available roles
             if (!activeRole || !availableRoles.includes(activeRole)) {
-                console.log('🔄 Setting active role to:', availableRoles[0]);
-                setActiveRole(availableRoles[0]);
+                // Prioritize roles: admin > event_manager > coordinators > student
+                const prioritizedRole =
+                    availableRoles.find(r => r === 'admin') ||
+                    availableRoles.find(r => r === 'event_manager') ||
+                    availableRoles.find(r => r.includes('coordinator')) ||
+                    availableRoles[0];
+
+                console.log('🔄 Setting active role to:', prioritizedRole);
+                console.log('📋 Available roles:', availableRoles);
+                setActiveRole(prioritizedRole);
             }
         } else {
             setActiveRole('');
