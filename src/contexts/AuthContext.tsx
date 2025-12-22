@@ -71,8 +71,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // If this is a critical error (no profile found), sign out the user
       // This prevents them from being stuck in a broken auth state
       if (error?.code === 'PGRST116') { // PostgreSQL "no rows returned" error
-        console.warn('No profile found for user, signing out');
-        await supabase.auth.signOut();
+        console.warn('No profile found for user - verify profile exists in DB');
+        // REMOVED: await supabase.auth.signOut(); 
+        // We do NOT sign out automatically to prevent loops/bad UX.
       }
     }
   };
@@ -253,8 +254,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Redirect to auth page
       window.location.href = '/auth';
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error signing out:', error);
+
+      // If session is missing, we are already effectively signed out locally.
+      // Treat this as success for the user.
+      if (error.message === 'Auth session missing!') {
+        console.warn('Session was missing during signout - treating as success');
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        window.location.href = '/auth';
+        return;
+      }
+
       setSigningOut(false);
 
       toast({
