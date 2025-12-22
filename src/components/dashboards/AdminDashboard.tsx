@@ -154,6 +154,9 @@ export function AdminDashboard() {
     const formatActionDescription = (log: RecentActivity) => {
         const { action, details, user } = log;
         const userName = user?.full_name || 'System';
+
+        if (!action) return 'Unknown Action';
+
         switch (action) {
             case 'settings_updated': return `${userName} updated system settings`;
             case 'global_registration_status_changed': return `${userName} changed registration status to ${details?.status}`;

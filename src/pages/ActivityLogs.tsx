@@ -351,7 +351,7 @@ export default function ActivityLogs() {
                     </TableCell>
                     <TableCell className="py-4">
                       <Badge className={`rounded-md px-2.5 py-0.5 text-[10px] uppercase font-black tracking-widest border-none shadow-none ${getActionColor(log.action)}`}>
-                        {log.action.split('_')[1] || log.action}
+                        {log.action?.split('_')[1] || log.action}
                       </Badge>
                     </TableCell>
                     <TableCell className="py-4 max-w-[300px]">
