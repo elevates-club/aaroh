@@ -27,6 +27,7 @@ import { EditEventDialog } from '@/components/forms/EditEventDialog';
 import { StudentRegistrationDialog } from '@/components/forms/StudentRegistrationDialog';
 import { StudentSelfRegistrationDialog } from '@/components/forms/StudentSelfRegistrationDialog';
 import { RegistrationStats } from '@/components/RegistrationStats';
+import { EventDetailsDialog } from '@/components/dialogs/EventDetailsDialog';
 import { format } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 
@@ -208,14 +209,15 @@ export default function Events() {
     <div className="min-h-screen bg-background">
       <div className="p-4 sm:p-6 lg:p-8 space-y-6">
         {/* Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary to-secondary p-6 sm:p-8 text-white shadow-lg">
+        <div className="relative overflow-hidden rounded-2xl bg-[#0a0a0a] border border-[#facc15]/20 p-6 sm:p-8 shadow-lg">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#facc15]/5 to-transparent"></div>
           <div className="relative z-10">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="min-w-0 flex-1">
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">
-                  AAROH Events
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 text-white">
+                  AAROH <span className="text-[#facc15]">Events</span>
                 </h1>
-                <p className="text-white/90 text-sm sm:text-base max-w-2xl">
+                <p className="text-gray-300 text-sm sm:text-base max-w-2xl">
                   Browse and register for arts, culture, and events competitions.
                   Remember: max 3 individual entries per year.
                 </p>
@@ -339,9 +341,12 @@ export default function Events() {
                     )}
                   </div>
 
-                  <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
-                    {event.description}
-                  </p>
+                  <div>
+                    <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed mb-2">
+                      {event.description}
+                    </p>
+                    <EventDetailsDialog event={event} getCategoryColor={getCategoryColor} />
+                  </div>
 
                   <div className="space-y-2 mt-auto">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">

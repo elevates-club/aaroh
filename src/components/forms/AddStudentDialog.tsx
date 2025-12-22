@@ -29,7 +29,7 @@ export function AddStudentDialog({ onStudentAdded, trigger }: AddStudentDialogPr
   };
 
   const defaultTrigger = (
-    <Button className="bg-gradient-to-r from-primary to-secondary w-full sm:w-auto">
+    <Button className="w-full sm:w-auto">
       <Plus className="mr-2 h-4 w-4" />
       <span className="hidden xs:inline">Add Student</span>
       <span className="xs:hidden">Add</span>

@@ -99,25 +99,26 @@ export default function MyRegistrations() {
     }
 
     return (
-        <div className="p-8 space-y-8 animate-in fade-in duration-700 max-w-[1600px] mx-auto">
-            <div className="flex items-center justify-between">
+        <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in fade-in duration-700 max-w-[1600px] mx-auto">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tight text-foreground">
+                    <h1 className="text-2xl md:text-3xl font-black tracking-tight text-foreground">
                         My <span className="text-primary">Registrations</span>
                     </h1>
-                    <p className="text-muted-foreground mt-1 text-lg font-medium">
+                    <p className="text-muted-foreground mt-1 text-sm md:text-lg font-medium">
                         Track your event registrations and status
                     </p>
                 </div>
-                <Button onClick={() => navigate('/events')} className="rounded-full h-12 px-6 font-bold shadow-lg shadow-primary/20">
+                <Button onClick={() => navigate('/events')} className="rounded-full h-12 px-6 font-bold shadow-lg shadow-primary/20 w-full sm:w-auto">
                     <Calendar className="h-4 w-4 mr-2" />
-                    Browse Events
+                    <span className="hidden sm:inline">Browse Events</span>
+                    <span className="sm:hidden">Browse</span>
                 </Button>
             </div>
 
             {/* Stats Summary - Bento Grid */}
-            <div className="grid gap-6 md:grid-cols-4">
-                <Card className="rounded-[2rem] border-none shadow-sm bg-card hover:shadow-md transition-all p-6 flex flex-col justify-between h-[160px] group">
+            <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+                <Card className="rounded-[1.5rem] md:rounded-[2rem] border-none shadow-sm bg-card hover:shadow-md transition-all p-4 md:p-6 flex flex-col justify-between h-[140px] md:h-[160px] group">
                     <CardHeader className="p-0 flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Total</CardTitle>
                         <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
@@ -168,15 +169,16 @@ export default function MyRegistrations() {
             </div>
 
             {/* Registrations List */}
-            <Card className="rounded-[2rem] border-none shadow-sm bg-card p-8">
+            <Card className="rounded-[1.5rem] md:rounded-[2rem] border-none shadow-sm bg-card p-4 md:p-8">
                 <CardHeader className="px-0 pt-0">
-                    <CardTitle className="flex items-center gap-3 text-xl font-bold text-foreground">
-                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                    <CardTitle className="flex items-center gap-3 text-lg md:text-xl font-bold text-foreground">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
                             <Trophy className="h-5 w-5" />
                         </div>
-                        Your Event Registrations
+                        <span className="hidden sm:inline">Your Event Registrations</span>
+                        <span className="sm:hidden">Registrations</span>
                     </CardTitle>
-                    <CardDescription className="ml-14 text-sm font-medium">All events you have registered for</CardDescription>
+                    <CardDescription className="ml-0 sm:ml-14 text-xs md:text-sm font-medium mt-2 sm:mt-0">All events you have registered for</CardDescription>
                 </CardHeader>
                 <CardContent className="px-0 pb-0">
                     {registrations.length === 0 ? (

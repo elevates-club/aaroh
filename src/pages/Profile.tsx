@@ -461,7 +461,7 @@ export default function Profile() {
                                 }}>
                                     Cancel
                                 </Button>
-                                <Button onClick={handleSaveProfile} disabled={saving} className="bg-gradient-to-r from-primary to-secondary">
+                                <Button onClick={handleSaveProfile} disabled={saving}>
                                     {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     <Save className="mr-2 h-4 w-4" />
                                     Save Changes

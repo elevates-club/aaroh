@@ -18,7 +18,7 @@ import {
 
 export function Header() {
   const { theme, toggleTheme } = useTheme();
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, signingOut } = useAuth();
   const navigate = useNavigate();
 
   return (
@@ -71,9 +71,13 @@ export function Header() {
               <User className="mr-2 h-4 w-4" />
               My Profile
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={signOut} className="text-destructive">
+            <DropdownMenuItem
+              onClick={signOut}
+              disabled={signingOut}
+              className="text-destructive"
+            >
               <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
+              {signingOut ? 'Signing out...' : 'Sign Out'}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

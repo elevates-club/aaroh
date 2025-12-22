@@ -29,7 +29,7 @@ export function CreateEventDialog({ onEventCreated, trigger }: CreateEventDialog
   };
 
   const defaultTrigger = (
-    <Button className="bg-gradient-to-r from-primary to-secondary">
+    <Button>
       <Plus className="mr-2 h-4 w-4" /> Create Event
     </Button>
   );

@@ -60,8 +60,8 @@ export function StudentDashboard() {
         rejected: 0,
         onStageUsed: 0,
         offStageUsed: 0,
-        onStageLimit: 2,
-        offStageLimit: 3,
+        onStageLimit: 5,
+        offStageLimit: 4,
     });
     const [myRegistrations, setMyRegistrations] = useState<MyRegistration[]>([]);
     const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
@@ -93,6 +93,11 @@ export function StudentDashboard() {
         }
     }, [studentId]);
 
+    // Fetch events independently of studentId to show opportunities even for role switchers
+    useEffect(() => {
+        fetchUpcomingEvents();
+    }, [user?.id]);
+
     // Real-time subscription for settings changes
     useEffect(() => {
         const channel = supabase
@@ -102,8 +107,8 @@ export function StudentDashboard() {
                 {
                     event: '*',
                     schema: 'public',
-                    table: 'settings',
-                    filter: `key=in.(max_on_stage_registrations,max_off_stage_registrations)`
+                    table: 'settings'
+                    // removed specific filter to ensure all settings updates are caught
                 },
                 (payload) => {
                     // When settings change, refetch stats to get new limits
@@ -135,12 +140,12 @@ export function StudentDashboard() {
     const fetchStats = async () => {
         if (!studentId) return;
         const { data: settings } = await supabase.from('settings').select('key, value').in('key', ['max_on_stage_registrations', 'max_off_stage_registrations']);
-        let onStageLimit = 2;
-        let offStageLimit = 3;
+        let onStageLimit = 5;
+        let offStageLimit = 4;
         settings?.forEach(s => {
             const val = s.value as any;
-            if (s.key === 'max_on_stage_registrations') onStageLimit = val?.limit || 2;
-            if (s.key === 'max_off_stage_registrations') offStageLimit = val?.limit || 3;
+            if (s.key === 'max_on_stage_registrations') onStageLimit = val?.limit || 5;
+            if (s.key === 'max_off_stage_registrations') offStageLimit = val?.limit || 4;
         });
         const { data: registrations } = await supabase.from('registrations').select(`id, status, event:events!inner(category)`).eq('student_id', studentId);
         const approved = registrations?.filter(r => r.status === 'approved').length || 0;
@@ -170,17 +175,35 @@ export function StudentDashboard() {
     };
 
     const fetchUpcomingEvents = async () => {
-        if (!studentId) return;
-        const { data: registeredEventIds } = await supabase.from('registrations').select('event_id').eq('student_id', studentId);
-        const registeredIds = registeredEventIds?.map(r => r.event_id) || [];
-        let query = supabase.from('events').select('*').eq('is_active', true).gte('registration_deadline', new Date().toISOString()).order('registration_deadline', { ascending: true }).limit(5);
-        if (registeredIds.length > 0) query = query.not('id', 'in', `(${registeredIds.join(',')})`);
-        const { data } = await query;
+        // Fetch registered events only if studentId exists
+        let registeredIds: string[] = [];
+        if (studentId) {
+            const { data: registeredEventIds } = await supabase
+                .from('registrations')
+                .select('event_id')
+                .eq('student_id', studentId);
+            registeredIds = registeredEventIds?.map(r => r.event_id) || [];
+        }
+
+        // Fetch all active events (works with or without studentId)
+        const { data, error } = await supabase
+            .from('events')
+            .select('*')
+            .eq('is_active', true)
+            .order('event_date', { ascending: true })
+            .limit(10);
+
+        console.log('fetchUpcomingEvents called with studentId:', studentId);
+        console.log('Registered event IDs:', registeredIds);
+        console.log('Fetched events:', data?.length || 0, 'events');
+        if (error) console.error('Event fetch error:', error);
+
         setUpcomingEvents(data || []);
     };
 
     const getDeadlineUrgency = (deadline: string) => {
         const deadlineDate = parseISO(deadline);
+        if (isPast(deadlineDate)) return 'text-destructive font-extrabold'; // Handle past dates
         const hoursLeft = Math.floor((deadlineDate.getTime() - Date.now()) / (1000 * 60 * 60));
         if (hoursLeft < 24) return 'text-red-500 font-extrabold';
         if (hoursLeft < 72) return 'text-amber-500 font-bold';
@@ -296,58 +319,87 @@ export function StudentDashboard() {
                             <Sparkles className="h-5 w-5 text-amber-500" />
                             <h3 className="text-lg font-bold text-foreground">Open Opportunities</h3>
                         </div>
+                        <Button variant="outline" size="sm" onClick={() => navigate('/events')} className="rounded-full border-primary/20 hover:bg-primary/5 text-primary text-xs font-bold uppercase tracking-wider">
+                            Explore All <ArrowRight className="ml-2 h-3 w-3" />
+                        </Button>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {upcomingEvents.length > 0 ? (
-                            upcomingEvents.map(event => (
-                                <div key={event.id} className="group relative p-0 rounded-[2rem] bg-card border border-border/50 shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden flex flex-col">
-                                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-orange-300 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
+                            upcomingEvents.slice(0, 3).map(event => {
+                                const isRegistered = myRegistrations.some(r => r.eventId === event.id);
+                                const deadlinePassed = event.registration_deadline ? isPast(parseISO(event.registration_deadline)) : false;
 
-                                    <div className="p-8 pb-4 flex-1 space-y-4">
-                                        <div className="flex justify-between items-start">
-                                            <Badge variant="secondary" className="bg-muted text-muted-foreground border border-border/50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider">{event.category.replace('_', ' ')}</Badge>
-                                            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                                <CalendarClock className="h-3 w-3" />
-                                                <span>{format(parseISO(event.event_date), 'MMM dd')}</span>
+                                return (
+                                    <div key={event.id} className="group relative p-0 rounded-[2rem] bg-card border border-border/50 shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden flex flex-col">
+                                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-orange-300 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
+
+                                        <div className="p-8 pb-4 flex-1 space-y-4">
+                                            <div className="flex justify-between items-start">
+                                                <Badge variant="secondary" className="bg-muted text-muted-foreground border border-border/50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider">{event.category.replace('_', ' ')}</Badge>
+                                                <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                                    <CalendarClock className="h-3 w-3" />
+                                                    <span>{event.event_date ? format(parseISO(event.event_date), 'MMM dd') : 'TBD'}</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <h3 className="text-xl font-black text-foreground leading-tight group-hover:text-primary transition-colors duration-300 line-clamp-2">
+                                                    {event.name}
+                                                </h3>
+                                                <p className="text-xs font-medium text-muted-foreground line-clamp-2 leading-relaxed">
+                                                    {event.description || "Join this event to showcase your talents and compete with the best."}
+                                                </p>
                                             </div>
                                         </div>
 
-                                        <div className="space-y-2">
-                                            <h3 className="text-xl font-black text-foreground leading-tight group-hover:text-primary transition-colors duration-300 line-clamp-2">
-                                                {event.name}
-                                            </h3>
-                                            <p className="text-xs font-medium text-muted-foreground line-clamp-2 leading-relaxed">
-                                                {event.description || "Join this event to showcase your talents and compete with the best."}
-                                            </p>
-                                        </div>
-                                    </div>
+                                        <div className="p-8 pt-0 mt-auto space-y-4">
+                                            <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-t border-border/50 pt-4">
+                                                <span className="flex items-center gap-1">
+                                                    <MapPin className="h-3 w-3" /> {event.venue || 'Main Stage'}
+                                                </span>
+                                                <span className={`${event.registration_deadline ? getDeadlineUrgency(event.registration_deadline) : ''}`}>
+                                                    {deadlinePassed ? "Reg Closed" : event.registration_deadline ? `Ends in ${formatDistanceToNow(parseISO(event.registration_deadline))}` : 'Open'}
+                                                </span>
+                                            </div>
 
-                                    <div className="p-8 pt-0 mt-auto space-y-4">
-                                        <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-t border-border/50 pt-4">
-                                            <span className="flex items-center gap-1">
-                                                <MapPin className="h-3 w-3" /> {event.venue || 'Main Stage'}
-                                            </span>
-                                            <span className={`${getDeadlineUrgency(event.registration_deadline)}`}>
-                                                Ends {formatDistanceToNow(parseISO(event.registration_deadline))}
-                                            </span>
-                                        </div>
-
-                                        <StudentSelfRegistrationDialog
-                                            event={event as any}
-                                            onRegistrationComplete={fetchAllData}
-                                            trigger={
-                                                <Button className="w-full rounded-2xl h-12 bg-muted text-foreground border border-border/50 font-bold text-xs uppercase tracking-widest hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-300">
-                                                    Register Interest
+                                            {isRegistered ? (
+                                                <Button disabled className="w-full rounded-2xl h-12 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-bold text-xs uppercase tracking-widest cursor-default">
+                                                    <CheckCircle className="h-4 w-4 mr-2" /> Registered
                                                 </Button>
-                                            }
-                                        />
+                                            ) : deadlinePassed ? (
+                                                <Button disabled className="w-full rounded-2xl h-12 bg-muted text-muted-foreground border border-border/50 font-bold text-xs uppercase tracking-widest cursor-not-allowed opacity-50">
+                                                    <Clock className="h-4 w-4 mr-2" /> Closed
+                                                </Button>
+                                            ) : (
+                                                <StudentSelfRegistrationDialog
+                                                    event={event as any}
+                                                    onRegistrationComplete={fetchAllData}
+                                                    trigger={
+                                                        <Button className="w-full rounded-2xl h-12 bg-muted text-foreground border border-border/50 font-bold text-xs uppercase tracking-widest hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-300">
+                                                            Register Interest
+                                                        </Button>
+                                                    }
+                                                />
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            ))
+                                )
+                            })
                         ) : (
-                            <div className="col-span-full text-center py-12 text-muted-foreground text-sm font-medium border-2 border-dashed border-border/50 rounded-2xl">
-                                No upcoming events open for registration.
+                            <div className="col-span-full flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-border/50 rounded-[2rem] space-y-4">
+                                <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+                                    <Sparkles className="h-8 w-8 text-muted-foreground/50" />
+                                </div>
+                                <div className="space-y-1">
+                                    <h3 className="text-lg font-bold text-foreground">No Events Found</h3>
+                                    <p className="text-sm font-medium text-muted-foreground max-w-[300px] mx-auto">
+                                        We couldn't find any upcoming events matching your criteria right now.
+                                    </p>
+                                </div>
+                                <Button onClick={() => navigate('/events')} className="rounded-full px-6 font-bold bg-primary text-primary-foreground hover:bg-primary/90">
+                                    Browse All Events
+                                </Button>
                             </div>
                         )}
                     </div>
@@ -362,25 +414,37 @@ export function StudentDashboard() {
                     <div className="flex-1 space-y-4">
                         <ScrollArea className="h-[280px] -mr-4 pr-4">
                             <div className="space-y-4">
-                                {myRegistrations.map((reg) => (
-                                    <div key={reg.id} className="flex items-center justify-between group p-2 hover:bg-muted/50 rounded-xl transition-colors">
-                                        <div className="flex items-center gap-4">
-                                            <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${reg.category === 'on_stage' ? 'bg-primary/10 text-primary' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                                                {reg.category === 'on_stage' ? <Palette className="h-5 w-5" /> : <GraduationCap className="h-5 w-5" />}
+                                {myRegistrations.length > 0 ? (
+                                    myRegistrations.map((reg) => (
+                                        <div key={reg.id} className="flex items-center justify-between group p-2 hover:bg-muted/50 rounded-xl transition-colors">
+                                            <div className="flex items-center gap-4">
+                                                <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${reg.category === 'on_stage' ? 'bg-primary/10 text-primary' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                                                    {reg.category === 'on_stage' ? <Palette className="h-5 w-5" /> : <GraduationCap className="h-5 w-5" />}
+                                                </div>
+                                                <div className="space-y-0.5">
+                                                    <p className="text-sm font-bold text-foreground">{reg.eventName}</p>
+                                                    <p className="text-[10px] font-medium text-muted-foreground">{reg.eventDate ? format(parseISO(reg.eventDate), 'MMM dd, yyyy') : 'Date TBD'}</p>
+                                                </div>
                                             </div>
-                                            <div className="space-y-0.5">
-                                                <p className="text-sm font-bold text-foreground">{reg.eventName}</p>
-                                                <p className="text-[10px] font-medium text-muted-foreground">{reg.eventDate ? format(parseISO(reg.eventDate), 'MMM dd, yyyy') : 'Date TBD'}</p>
-                                            </div>
+                                            <Badge className={`text-[10px] font-bold uppercase rounded-md px-2 py-0.5 ${reg.status === 'approved' ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20' :
+                                                reg.status === 'pending' ? 'bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-amber-500/20' :
+                                                    'bg-destructive/10 text-destructive hover:bg-destructive/20 border-destructive/20'
+                                                }`}>
+                                                {reg.status}
+                                            </Badge>
                                         </div>
-                                        <Badge className={`text-[10px] font-bold uppercase rounded-md px-2 py-0.5 ${reg.status === 'approved' ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20' :
-                                            reg.status === 'pending' ? 'bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-amber-500/20' :
-                                                'bg-destructive/10 text-destructive hover:bg-destructive/20 border-destructive/20'
-                                            }`}>
-                                            {reg.status}
-                                        </Badge>
+                                    ))
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center py-12 text-center space-y-3">
+                                        <div className="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center">
+                                            <Clock className="h-6 w-6 text-muted-foreground/50" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-sm font-bold text-foreground">No Registrations Yet</p>
+                                            <p className="text-xs text-muted-foreground max-w-[200px] mx-auto">You don't have any recent registrations.</p>
+                                        </div>
                                     </div>
-                                ))}
+                                )}
                             </div>
                         </ScrollArea>
                     </div>

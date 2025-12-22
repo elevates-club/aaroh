@@ -19,6 +19,7 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  signingOut: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string, role: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -39,6 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [signingOut, setSigningOut] = useState(false);
   const lastLoggedSessionId = React.useRef<string | null>(null);
   const currentProfileIdRef = React.useRef<string | null>(null);
 
@@ -53,13 +55,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) throw error;
       setProfile(data);
       currentProfileIdRef.current = data?.id || null;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching profile:', error);
+
+      // CRITICAL: Always clear profile on error to prevent stuck loading
+      setProfile(null);
+      currentProfileIdRef.current = null;
+
       toast({
-        title: 'Error',
-        description: 'Failed to fetch user profile',
+        title: 'Profile Error',
+        description: 'Unable to load profile. Please refresh or contact support.',
         variant: 'destructive',
       });
+
+      // If this is a critical error (no profile found), sign out the user
+      // This prevents them from being stuck in a broken auth state
+      if (error?.code === 'PGRST116') { // PostgreSQL "no rows returned" error
+        console.warn('No profile found for user, signing out');
+        await supabase.auth.signOut();
+      }
     }
   };
 
@@ -132,7 +146,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // CRITICAL FAILSAFE: Force loading to false after 10 seconds
+    // This prevents infinite loading spinner if something goes wrong
+    const loadingTimeout = setTimeout(() => {
+      console.warn('[AuthContext] Loading timeout triggered - forcing loading to false');
+      setLoading(false);
+    }, 10000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(loadingTimeout);
+    };
   }, []);
 
   const signIn = async (identifier: string, password: string) => {
@@ -201,28 +225,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
-      // Log logout activity before signing out
+      setSigningOut(true);
+
+      // Log logout activity in background (non-blocking)
       if (profile?.id) {
-        try {
-          await logUserLogout(profile.id);
-        } catch (logError) {
-          console.warn('Failed to log logout activity:', logError);
-          // Continue with sign out even if logging fails
-        }
+        logUserLogout(profile.id).catch(logError => {
+          console.warn('Failed to log logout activity (non-critical):', logError);
+        });
       }
 
+      // Perform the actual sign-out
       const { error } = await supabase.auth.signOut();
+
       if (error) throw error;
+
+      // Clear state immediately
       setUser(null);
       setSession(null);
       setProfile(null);
+      currentProfileIdRef.current = null;
+
+      // Clear session storage
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('aaroh_session_logged_id');
+      }
+
+      // Redirect to auth page
+      window.location.href = '/auth';
+
     } catch (error) {
       console.error('Error signing out:', error);
+      setSigningOut(false);
+
       toast({
-        title: 'Error',
-        description: 'Failed to sign out',
+        title: 'Sign Out Failed',
+        description: error instanceof Error ? error.message : 'Please try again or refresh the page',
         variant: 'destructive',
       });
+
+      // Force a full page reload as fallback
+      setTimeout(() => {
+        window.location.href = '/auth';
+      }, 2000);
     }
   };
 
@@ -233,6 +277,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         session,
         profile,
         loading,
+        signingOut,
         signIn,
         signUp,
         signOut,

@@ -384,7 +384,7 @@ export function CSVUploadDialog({ onStudentsAdded, trigger }: CSVUploadDialogPro
               {csvData.length > 0 && !isUploading && !uploadResult && (
                 <Button
                   onClick={uploadStudents}
-                  className="flex-1 bg-gradient-to-r from-primary to-secondary h-10"
+                  className="flex-1 h-10"
                 >
                   <Upload className="mr-2 h-4 w-4" />
                   <span className="hidden sm:inline">Upload {csvData.length} Students</span>

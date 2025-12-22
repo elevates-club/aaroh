@@ -33,7 +33,7 @@ import { SidebarStatus } from './SidebarStatus';
 
 export function AppSidebar() {
   const location = useLocation();
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, signingOut } = useAuth();
   const { setOpenMobile, isMobile } = useSidebar();
   const { activeRole } = useRole();
 
@@ -168,9 +168,12 @@ export function AppSidebar() {
               size="sm"
               className="w-full justify-start gap-3 hover:bg-destructive/10 hover:text-destructive text-muted-foreground font-bold rounded-2xl transition-all group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:h-12 group-data-[collapsible=icon]:w-12 group-data-[collapsible=icon]:bg-muted/30"
               onClick={() => signOut()}
+              disabled={signingOut}
             >
               <LogOut className="h-5 w-5" />
-              <span className="text-xs font-black uppercase tracking-[0.1em] group-data-[collapsible=icon]:hidden">Logout</span>
+              <span className="text-xs font-black uppercase tracking-[0.1em] group-data-[collapsible=icon]:hidden">
+                {signingOut ? 'Logging out...' : 'Logout'}
+              </span>
             </Button>
           </div>
         </div>

@@ -370,7 +370,7 @@ export function CreateEventForm({ onSuccess, onCancel }: CreateEventFormProps) {
             Cancel
           </Button>
         )}
-        <Button type="submit" disabled={loading} className="flex-1 bg-gradient-to-r from-primary to-secondary">
+        <Button type="submit" disabled={loading} className="flex-1">
           {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Palette className="mr-2 h-4 w-4" />}
           Create Event
         </Button>

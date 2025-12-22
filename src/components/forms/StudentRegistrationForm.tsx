@@ -594,7 +594,7 @@ export function StudentRegistrationForm({ event, onSuccess, onCancel }: StudentR
               <Button
                 onClick={handleSubmit}
                 disabled={registering || selectedStudents.length === 0}
-                className="w-full h-12 bg-gradient-to-r from-primary to-secondary text-base font-medium"
+                className="w-full h-12 text-base font-medium"
               >
                 {registering ? (
                   <>

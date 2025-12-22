@@ -256,7 +256,7 @@ export function EditStudentDialog({ student, onStudentUpdated, trigger }: EditSt
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 bg-gradient-to-r from-primary to-secondary"
+                  className="flex-1"
                 >
                   {isSubmitting ? (
                     <>

@@ -200,7 +200,7 @@ export function AddStudentForm({ onSuccess, onCancel }: AddStudentFormProps) {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 bg-gradient-to-r from-primary to-secondary h-10"
+              className="flex-1 h-10"
             >
               {isSubmitting ? (
                 <>

@@ -299,16 +299,20 @@ export default function Registrations() {
     <div className="min-h-screen bg-background">
       <div className="p-4 sm:p-6 lg:p-8 space-y-6">
         {/* Modern Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary to-secondary p-6 sm:p-8 text-white">
-          <div className="absolute inset-0 bg-black/10"></div>
+        <div className="relative overflow-hidden rounded-2xl bg-[#0a0a0a] border border-[#facc15]/20 p-6 sm:p-8 shadow-lg">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#facc15]/5 to-transparent"></div>
           <div className="relative z-10">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="min-w-0 flex-1">
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">
-                  {(hasRole(activeRole, USER_ROLES.ADMIN) || hasRole(activeRole, USER_ROLES.EVENT_MANAGER)) ? 'All Registrations' : 'Registration Details'}
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 text-white">
+                  {(hasRole(activeRole, USER_ROLES.ADMIN) || hasRole(activeRole, USER_ROLES.EVENT_MANAGER)) ? (
+                    <><span className="text-[#facc15]">All</span> Registrations</>
+                  ) : (
+                    <>Registration <span className="text-[#facc15]">Details</span></>
+                  )}
                 </h1>
-                <p className="text-white/90 text-sm sm:text-base">
-                  Manage events event registrations
+                <p className="text-gray-300 text-sm sm:text-base">
+                  Manage event registrations
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">

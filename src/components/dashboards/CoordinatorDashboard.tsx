@@ -321,22 +321,34 @@ export function CoordinatorDashboard() {
                     </div>
                     <ScrollArea className="flex-1 p-0">
                         <div className="divide-y divide-border/50">
-                            {recentRegistrations.map((reg) => (
-                                <div key={reg.id} className="p-4 px-8 hover:bg-muted/50 transition-colors flex items-center justify-between group">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`h-10 w-10 rounded-xl flex items-center justify-center font-bold text-xs ${reg.status === 'pending' ? 'bg-amber-500/10 text-amber-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
-                                            {reg.studentName.charAt(0)}
+                            {recentRegistrations.length > 0 ? (
+                                recentRegistrations.map((reg) => (
+                                    <div key={reg.id} className="p-4 px-8 hover:bg-muted/50 transition-colors flex items-center justify-between group">
+                                        <div className="flex items-center gap-4">
+                                            <div className={`h-10 w-10 rounded-xl flex items-center justify-center font-bold text-xs ${reg.status === 'pending' ? 'bg-amber-500/10 text-amber-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
+                                                {reg.studentName.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-foreground">{reg.studentName}</p>
+                                                <p className="text-xs text-muted-foreground truncate w-40">{reg.eventName}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-bold text-foreground">{reg.studentName}</p>
-                                            <p className="text-xs text-muted-foreground truncate w-40">{reg.eventName}</p>
-                                        </div>
+                                        <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                                            {formatDistanceToNow(new Date(reg.createdAt), { addSuffix: true })}
+                                        </span>
                                     </div>
-                                    <span className="text-[10px] font-bold text-muted-foreground uppercase">
-                                        {formatDistanceToNow(new Date(reg.createdAt), { addSuffix: true })}
-                                    </span>
+                                ))
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-12 text-center space-y-3">
+                                    <div className="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center">
+                                        <UserX className="h-6 w-6 text-muted-foreground/50" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-sm font-bold text-foreground">No Recent Registrations</p>
+                                        <p className="text-xs text-muted-foreground max-w-[200px] mx-auto">No students have registered recently.</p>
+                                    </div>
                                 </div>
-                            ))}
+                            )}
                         </div>
                     </ScrollArea>
                 </Card>
