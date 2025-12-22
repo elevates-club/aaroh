@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Sparkles, User, Lock, Mail, ArrowRight, LayoutGrid, ShieldCheck } from 'lucide-react';
+import { Loader2, Sparkles, User, Lock, Mail, ArrowRight, LayoutGrid, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { USER_ROLES, getRoleLabel } from '@/lib/constants';
 import { fetchSystemSettings } from '@/lib/settings';
@@ -17,6 +17,8 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [signUpEnabled, setSignUpEnabled] = useState(true);
   const [activeTab, setActiveTab] = useState("signin");
+  const [showSignInPassword, setShowSignInPassword] = useState(false);
+  const [showSignUpPassword, setShowSignUpPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -183,19 +185,23 @@ export default function Auth() {
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Password</Label>
-                      <span className="text-[10px] font-bold text-primary cursor-pointer hover:underline uppercase tracking-wide">Forgot Password?</span>
-                    </div>
+                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Password</Label>
                     <div className="relative">
                       <Lock className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground/50" />
                       <Input
-                        type="password"
-                        className="pl-12 h-12 bg-muted/30 border-border/50 focus:bg-background focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-xl transition-all font-medium"
+                        type={showSignInPassword ? "text" : "password"}
+                        className="pl-12 pr-12 h-12 bg-muted/30 border-border/50 focus:bg-background focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-xl transition-all font-medium"
                         placeholder="••••••••"
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowSignInPassword(!showSignInPassword)}
+                        className="absolute right-4 top-3.5 text-muted-foreground/50 hover:text-foreground transition-colors"
+                      >
+                        {showSignInPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
                     </div>
                   </div>
 
@@ -242,13 +248,20 @@ export default function Auth() {
                       <div className="relative">
                         <Lock className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground/50" />
                         <Input
-                          type="password"
-                          className="pl-12 h-12 bg-muted/30 border-border/50 focus:bg-background focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-xl transition-all font-medium"
+                          type={showSignUpPassword ? "text" : "password"}
+                          className="pl-12 pr-12 h-12 bg-muted/30 border-border/50 focus:bg-background focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-xl transition-all font-medium"
                           placeholder="••••••••"
                           value={formData.password}
                           onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                           required
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowSignUpPassword(!showSignUpPassword)}
+                          className="absolute right-4 top-3.5 text-muted-foreground/50 hover:text-foreground transition-colors"
+                        >
+                          {showSignUpPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        </button>
                       </div>
                     </div>
 
