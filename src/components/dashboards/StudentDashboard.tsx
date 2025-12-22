@@ -477,14 +477,14 @@ export function StudentDashboard() {
                     <div className="relative z-10">
                         <div className="flex justify-between items-start mb-6">
                             <Badge className="bg-background/20 hover:bg-background/30 text-background border-none font-bold uppercase tracking-wider text-[10px]">
-                                {myRegistrations.some(r => r.status === 'approved' && !isPast(parseISO(r.eventDate))) ? 'Next Up' : 'Status'}
+                                {myRegistrations.some(r => r.status === 'approved' && r.eventDate && !isPast(parseISO(r.eventDate))) ? 'Next Up' : 'Status'}
                             </Badge>
                             <Calendar className="h-6 w-6 text-background/50" />
                         </div>
 
                         {(() => {
                             const nextEvent = myRegistrations
-                                .filter(r => r.status === 'approved' && !isPast(parseISO(r.eventDate)))
+                                .filter(r => r.status === 'approved' && r.eventDate && !isPast(parseISO(r.eventDate)))
                                 .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime())[0];
 
                             if (nextEvent) {
