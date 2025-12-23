@@ -250,28 +250,27 @@ export default function EventSettings() {
                 </Card>
 
                 {/* 3. DEADLINE (6 Cols) */}
-                <Card className="md:col-span-6 border-none bg-primary text-primary-foreground shadow-lg shadow-primary/20 p-8 h-[240px] flex flex-col justify-between group overflow-hidden relative rounded-[2rem]">
-                    <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-white/10 rounded-full blur-[80px] -mr-20 -mt-20 pointer-events-none" />
+                <Card className="md:col-span-6 border-none bg-primary text-primary-foreground shadow-lg shadow-primary/20 p-8 h-[240px] flex flex-col justify-between group rounded-[2rem]">
 
-                    <div className="relative z-10 flex justify-between items-start">
-                        <div className="h-12 w-12 rounded-[1.5rem] bg-white/10 flex items-center justify-center text-white backdrop-blur-md">
+                    <div className="flex justify-between items-start">
+                        <div className="h-12 w-12 rounded-[1.5rem] bg-primary-foreground/10 flex items-center justify-center text-primary-foreground">
                             <Clock className="h-6 w-6" />
                         </div>
                         <div className="text-right">
-                            <p className="text-[10px] uppercase font-bold tracking-widest opacity-50 text-white">Registration Deadline</p>
-                            <p className="text-4xl font-black text-white">{settings.registrationDeadlineDays} <span className="text-lg font-bold opacity-50">Days</span></p>
+                            <p className="text-[10px] uppercase font-bold tracking-widest text-primary-foreground/80">Registration Deadline</p>
+                            <p className="text-4xl font-black text-primary-foreground">{settings.registrationDeadlineDays} <span className="text-lg font-bold opacity-80">Days</span></p>
                         </div>
                     </div>
 
-                    <div className="relative z-10 space-y-4">
-                        <Label className="text-xs font-bold uppercase tracking-wider text-white/60">Days Before Event</Label>
+                    <div className="space-y-4">
+                        <Label className="text-xs font-bold uppercase tracking-wider text-primary-foreground">Days Before Event</Label>
                         <Input
                             type="number"
                             value={settings.registrationDeadlineDays}
                             onChange={(e) => setSettings(prev => ({ ...prev, registrationDeadlineDays: parseInt(e.target.value) || 0 }))}
-                            className="bg-white/10 border-white/10 text-white placeholder:text-white/20 h-12 rounded-xl font-bold focus-visible:ring-offset-0 focus-visible:ring-white/20"
+                            className="bg-primary-foreground/10 border-none text-primary-foreground placeholder:text-primary-foreground/50 h-12 rounded-xl font-bold focus-visible:ring-0"
                         />
-                        <p className="text-[10px] text-white/40">Number of days before event to close registration.</p>
+                        <p className="text-[10px] text-primary-foreground/70">Number of days before event to close registration.</p>
                     </div>
                 </Card>
 
