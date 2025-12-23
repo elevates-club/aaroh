@@ -193,7 +193,7 @@ export default function Auth() {
                         className="pl-12 pr-12 h-12 bg-muted/30 border-border/50 focus:bg-background focus:border-primary/20 focus:ring-4 focus:ring-primary/5 rounded-xl transition-all font-medium"
                         placeholder="••••••••"
                         value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value.toLowerCase() })}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       />
                       <button
                         type="button"
