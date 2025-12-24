@@ -24,6 +24,10 @@ export default function EventSettings() {
         registrationDeadlineDays: 2,
         globalRegistrationOpen: true,
         scoreboardVisible: false,
+        teamNameFirst: 'First Year',
+        teamNameSecond: 'Second Year',
+        teamNameThird: 'Third Year',
+        teamNameFourth: 'Fourth Year',
     });
 
     useEffect(() => {
@@ -49,6 +53,10 @@ export default function EventSettings() {
                     if (s.key === 'registration_deadline_days') newSettings.registrationDeadlineDays = val?.days || 2;
                     if (s.key === 'global_registration_open') newSettings.globalRegistrationOpen = val?.enabled !== false;
                     if (s.key === 'scoreboard_visible') newSettings.scoreboardVisible = val?.enabled === true;
+                    if (s.key === 'team_name_first') newSettings.teamNameFirst = val?.name || 'First Year';
+                    if (s.key === 'team_name_second') newSettings.teamNameSecond = val?.name || 'Second Year';
+                    if (s.key === 'team_name_third') newSettings.teamNameThird = val?.name || 'Third Year';
+                    if (s.key === 'team_name_fourth') newSettings.teamNameFourth = val?.name || 'Fourth Year';
                 });
                 setSettings(newSettings);
             }
@@ -74,6 +82,10 @@ export default function EventSettings() {
                 { key: 'registration_deadline_days', value: { days: settings.registrationDeadlineDays }, updated_by: user?.id },
                 { key: 'global_registration_open', value: { enabled: settings.globalRegistrationOpen }, updated_by: user?.id },
                 { key: 'scoreboard_visible', value: { enabled: settings.scoreboardVisible }, updated_by: user?.id },
+                { key: 'team_name_first', value: { name: settings.teamNameFirst }, updated_by: user?.id },
+                { key: 'team_name_second', value: { name: settings.teamNameSecond }, updated_by: user?.id },
+                { key: 'team_name_third', value: { name: settings.teamNameThird }, updated_by: user?.id },
+                { key: 'team_name_fourth', value: { name: settings.teamNameFourth }, updated_by: user?.id },
             ];
 
             const { error } = await supabase
@@ -339,6 +351,57 @@ export default function EventSettings() {
                     </div>
                 </Card>
 
+                {/* 6. TEAM NAMES (12 Cols) */}
+                <Card className="md:col-span-12 border-border/50 bg-card shadow-sm hover:shadow-md transition-shadow p-8 rounded-[2rem]">
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="h-12 w-12 rounded-[1.5rem] bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+                            <Users className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-bold text-foreground">Team Identity</h3>
+                            <p className="text-sm font-medium text-muted-foreground">Customize the display names for each year group on the scoreboard.</p>
+                        </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="space-y-3">
+                            <Label className="uppercase text-xs font-bold tracking-wider text-muted-foreground">First Year</Label>
+                            <Input
+                                value={settings.teamNameFirst}
+                                onChange={(e) => setSettings(prev => ({ ...prev, teamNameFirst: e.target.value }))}
+                                placeholder="e.g. Phoenix"
+                                className="bg-muted/30 border-border/50 rounded-xl"
+                            />
+                        </div>
+                        <div className="space-y-3">
+                            <Label className="uppercase text-xs font-bold tracking-wider text-muted-foreground">Second Year</Label>
+                            <Input
+                                value={settings.teamNameSecond}
+                                onChange={(e) => setSettings(prev => ({ ...prev, teamNameSecond: e.target.value }))}
+                                placeholder="e.g. Titans"
+                                className="bg-muted/30 border-border/50 rounded-xl"
+                            />
+                        </div>
+                        <div className="space-y-3">
+                            <Label className="uppercase text-xs font-bold tracking-wider text-muted-foreground">Third Year</Label>
+                            <Input
+                                value={settings.teamNameThird}
+                                onChange={(e) => setSettings(prev => ({ ...prev, teamNameThird: e.target.value }))}
+                                placeholder="e.g. Spartans"
+                                className="bg-muted/30 border-border/50 rounded-xl"
+                            />
+                        </div>
+                        <div className="space-y-3">
+                            <Label className="uppercase text-xs font-bold tracking-wider text-muted-foreground">Fourth Year</Label>
+                            <Input
+                                value={settings.teamNameFourth}
+                                onChange={(e) => setSettings(prev => ({ ...prev, teamNameFourth: e.target.value }))}
+                                placeholder="e.g. Legends"
+                                className="bg-muted/30 border-border/50 rounded-xl"
+                            />
+                        </div>
+                    </div>
+                </Card>
             </div>
         </div>
     );

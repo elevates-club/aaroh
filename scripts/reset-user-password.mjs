@@ -31,7 +31,7 @@ async function resetPassword() {
     }
 
     const userId = students.user_id;
-    const newPassword = 'TestPassword123!';
+    const newPassword = 'Admin@123';
 
     // 2. Update Password
     const { data, error } = await supabase.auth.admin.updateUserById(

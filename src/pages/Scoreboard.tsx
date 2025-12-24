@@ -48,6 +48,12 @@ export default function Scoreboard() {
     const [loading, setLoading] = useState(true);
     const [selectedYear, setSelectedYear] = useState<string | null>(null);
     const [isScoreboardVisible, setIsScoreboardVisible] = useState(false);
+    const [teamNames, setTeamNames] = useState({
+        first: 'First Year',
+        second: 'Second Year',
+        third: 'Third Year',
+        fourth: 'Fourth Year',
+    });
 
     useEffect(() => {
         fetchData();
@@ -64,19 +70,37 @@ export default function Scoreboard() {
 
     const fetchData = async () => {
         try {
-            // 1. Check Visibility
+            setLoading(true);
+
+            // 1. Check Visibility & Team Names
             const { data: settingsData } = await supabase
                 .from('settings')
-                .select('value')
-                .eq('key', 'scoreboard_visible')
-                .single();
+                .select('*')
+                .in('key', ['scoreboard_visible', 'team_name_first', 'team_name_second', 'team_name_third', 'team_name_fourth']);
 
-            const isVisible = (settingsData?.value as any)?.enabled === true;
+            let isVisible = false;
+            let loadedTeamNames = {
+                first: 'First Year',
+                second: 'Second Year',
+                third: 'Third Year',
+                fourth: 'Fourth Year',
+            };
+
+            if (settingsData) {
+                settingsData.forEach(s => {
+                    const val = s.value as any;
+                    if (s.key === 'scoreboard_visible') isVisible = val?.enabled === true;
+                    if (s.key === 'team_name_first') loadedTeamNames.first = val?.name || 'First Year';
+                    if (s.key === 'team_name_second') loadedTeamNames.second = val?.name || 'Second Year';
+                    if (s.key === 'team_name_third') loadedTeamNames.third = val?.name || 'Third Year';
+                    if (s.key === 'team_name_fourth') loadedTeamNames.fourth = val?.name || 'Fourth Year';
+                });
+            }
+
             setIsScoreboardVisible(isVisible);
+            setTeamNames(loadedTeamNames);
 
-            // If not visible, we can stop here to save resources, but for now let's load everything
-            // so admins might see it (if we add admin override later). 
-            // For now, if we want to validly show "Coming Soon", we assume we don't need data.
+            // If not visible, we can stop here
             if (!isVisible) {
                 setLoading(false);
                 return;
@@ -161,10 +185,10 @@ export default function Scoreboard() {
 
     const getYearLabel = (year: string) => {
         switch (year) {
-            case 'first': return 'First Year';
-            case 'second': return 'Second Year';
-            case 'third': return 'Third Year';
-            case 'fourth': return 'Fourth Year';
+            case 'first': return teamNames.first;
+            case 'second': return teamNames.second;
+            case 'third': return teamNames.third;
+            case 'fourth': return teamNames.fourth;
             default: return year;
         }
     };
@@ -205,7 +229,7 @@ export default function Scoreboard() {
 
     if (!isScoreboardVisible) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-950 p-4">
+            <div className="min-h-screen flex items-center justify-center bg-slate-950 p-4 relative">
                 <div className="text-center space-y-6 max-w-lg mx-auto">
                     <Trophy className="h-24 w-24 text-yellow-500/20 mx-auto" />
                     <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter">
@@ -213,6 +237,13 @@ export default function Scoreboard() {
                     </h1>
                     <p className="text-white/40 text-lg">
                         The AAROH 2026 Scoreboard will be live once the events begin. Stay tuned for real-time updates!
+                    </p>
+                </div>
+
+                {/* Credits Footer */}
+                <div className="absolute bottom-6 left-0 right-0 text-center pointer-events-none">
+                    <p className="text-white/20 text-xs font-mono tracking-widest uppercase">
+                        Developed by Elevates
                     </p>
                 </div>
             </div>
@@ -228,8 +259,13 @@ export default function Scoreboard() {
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-16">
                 {/* Header */}
                 <div className="text-center space-y-6">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs font-bold tracking-[0.2em] uppercase backdrop-blur-sm">
-                        <Activity className="h-3 w-3" /> Live Standings
+                    <div className="flex items-center justify-center gap-4">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs font-bold tracking-[0.2em] uppercase backdrop-blur-sm">
+                            <Activity className="h-3 w-3" /> Live Standings
+                        </div>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/50 text-xs font-bold tracking-[0.2em] uppercase backdrop-blur-sm">
+                            <Users className="h-3 w-3" /> {totalUsers} Registered Users
+                        </div>
                     </div>
                     <div>
                         <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50 mb-4">
@@ -375,6 +411,13 @@ export default function Scoreboard() {
                         </Table>
                     </div>
                 </div>
+            </div>
+
+            {/* Credits Footer */}
+            <div className="absolute bottom-6 left-0 right-0 text-center pointer-events-none">
+                <p className="text-white/20 text-xs font-mono tracking-widest uppercase">
+                    Developed by Elevates
+                </p>
             </div>
 
             {/* Year Details Dialog */}

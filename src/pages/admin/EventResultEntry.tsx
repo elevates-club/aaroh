@@ -39,6 +39,12 @@ export default function EventResultEntry() {
     const [results, setResults] = useState<Record<string, Result>>({}); // Map reg_id -> Result
     const [eventDetails, setEventDetails] = useState<any>(null);
     const [saving, setSaving] = useState(false);
+    const [teamNames, setTeamNames] = useState({
+        first: 'First Year',
+        second: 'Second Year',
+        third: 'Third Year',
+        fourth: 'Fourth Year',
+    });
 
     useEffect(() => {
         if (eventId) fetchData();
@@ -99,6 +105,30 @@ export default function EventResultEntry() {
                 }
             });
             setResults(resultsMap);
+
+            // 4. Fetch Team Names
+            const { data: settingsData } = await supabase
+                .from('settings')
+                .select('*')
+                .in('key', ['team_name_first', 'team_name_second', 'team_name_third', 'team_name_fourth']);
+
+            let loadedTeamNames = {
+                first: 'First Year',
+                second: 'Second Year',
+                third: 'Third Year',
+                fourth: 'Fourth Year',
+            };
+
+            if (settingsData) {
+                settingsData.forEach(s => {
+                    const val = s.value as any;
+                    if (s.key === 'team_name_first') loadedTeamNames.first = val?.name || 'First Year';
+                    if (s.key === 'team_name_second') loadedTeamNames.second = val?.name || 'Second Year';
+                    if (s.key === 'team_name_third') loadedTeamNames.third = val?.name || 'Third Year';
+                    if (s.key === 'team_name_fourth') loadedTeamNames.fourth = val?.name || 'Fourth Year';
+                });
+            }
+            setTeamNames(loadedTeamNames);
 
         } catch (error: any) {
             console.error('Error fetching data:', error);
@@ -215,7 +245,9 @@ export default function EventResultEntry() {
                                                 {reg.student.name} <br />
                                                 <span className="text-xs text-muted-foreground">{reg.student.roll_number}</span>
                                             </TableCell>
-                                            <TableCell className="capitalize">{reg.student.year}</TableCell>
+                                            <TableCell className="capitalize font-medium text-primary">
+                                                {teamNames[reg.student.year as keyof typeof teamNames] || reg.student.year}
+                                            </TableCell>
                                             <TableCell>
                                                 <Select
                                                     value={res.status}

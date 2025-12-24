@@ -275,6 +275,12 @@ export function ProfileSetup() {
                     </Button>
                 </form>
             </Card>
+
+            <div className="absolute bottom-6 left-0 right-0 text-center pointer-events-none">
+                <p className="text-muted-foreground/40 text-[10px] font-mono tracking-widest uppercase">
+                    Developed by Elevates
+                </p>
+            </div>
         </div>
     );
 }
