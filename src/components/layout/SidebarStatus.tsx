@@ -23,6 +23,34 @@ export function SidebarStatus() {
                 return;
             }
 
+            if (activeRole === 'student') {
+                try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) {
+                        const { data: studentData } = await supabase
+                            .from('students')
+                            .select('id')
+                            .eq('user_id', user.id)
+                            .single();
+
+                        if (studentData) {
+                            const { count: regCount } = await supabase
+                                .from('registrations')
+                                .select('id', { count: 'exact', head: true })
+                                .eq('student_id', studentData.id);
+                            setCount(regCount || 0);
+                        } else {
+                            setCount(0);
+                        }
+                    }
+                } catch (err) {
+                    console.error('Error fetching student status:', err);
+                    setCount(null);
+                }
+                setLoading(false);
+                return;
+            }
+
             const year = getCoordinatorYear(activeRole);
             if (!year) {
                 setCount(null);
@@ -48,9 +76,10 @@ export function SidebarStatus() {
         return () => clearInterval(interval);
     }, [activeRole]);
 
-    if (activeRole !== 'event_manager' && !getCoordinatorYear(activeRole)) return null;
+    if (activeRole !== 'event_manager' && activeRole !== 'student' && !getCoordinatorYear(activeRole)) return null;
 
     const isCoordinator = !!getCoordinatorYear(activeRole);
+    const isStudent = activeRole === 'student';
     const isEventManager = activeRole === 'event_manager';
 
     return (
@@ -70,12 +99,12 @@ export function SidebarStatus() {
                         <div className="flex items-baseline gap-1">
                             <span className="text-3xl font-black text-foreground tracking-tighter">{count}</span>
                             <span className="text-xs font-bold text-muted-foreground">
-                                {isCoordinator ? 'Pending' : 'Active Events'}
+                                {isCoordinator ? 'Pending' : isStudent ? 'Registrations' : 'Active Events'}
                             </span>
                         </div>
                     )}
                     <p className="text-[10px] text-muted-foreground font-medium mt-1 leading-tight">
-                        {isCoordinator ? 'Requests awaiting your review.' : 'Live events currently running.'}
+                        {isCoordinator ? 'Requests awaiting your review.' : isStudent ? 'Your total event registrations.' : 'Live events currently running.'}
                     </p>
                 </div>
             </div>

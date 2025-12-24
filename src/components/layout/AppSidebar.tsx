@@ -10,7 +10,8 @@ import {
   UserCog,
   LogOut,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  HelpCircle
 } from 'lucide-react';
 import {
   Sidebar,
