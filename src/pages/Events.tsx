@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Palette, Calendar, MapPin, Users, Clock, Search, Filter, Loader2, Download, Edit, Layout, Layers, Trash2 } from 'lucide-react';
+import { Palette, Calendar, MapPin, Users, Clock, Search, Filter, Loader2, Download, Edit, Layout, Layers, Trash2, Trophy } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -60,6 +60,7 @@ export default function Events() {
   const [pdfDownloadingId, setPdfDownloadingId] = useState<string | null>(null);
 
   const [globalRegistrationOpen, setGlobalRegistrationOpen] = useState(true);
+  const [scoreboardVisible, setScoreboardVisible] = useState(false);
 
   useEffect(() => {
     fetchEvents();
@@ -68,15 +69,26 @@ export default function Events() {
 
   const fetchGlobalSettings = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: regData } = await supabase
         .from('settings')
         .select('value')
         .eq('key', 'global_registration_open')
         .single();
 
-      if (data) {
-        const val = data.value as any;
+      if (regData) {
+        const val = regData.value as any;
         setGlobalRegistrationOpen(val?.enabled !== false);
+      }
+
+      const { data: scoreData } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'scoreboard_visible')
+        .single();
+
+      if (scoreData) {
+        const val = scoreData.value as any;
+        setScoreboardVisible(val?.enabled === true);
       }
     } catch (error) {
       console.error("Error fetching global settings:", error);
@@ -304,8 +316,17 @@ export default function Events() {
                       </div>
                     </div>
 
-                    {(hasRole(activeRole, USER_ROLES.ADMIN) || hasRole(activeRole, USER_ROLES.EVENT_MANAGER)) && (
+                    {(hasRole(activeRole, USER_ROLES.ADMIN) || hasRole(activeRole, USER_ROLES.EVENT_MANAGER)) && scoreboardVisible && (
                       <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-full hover:bg-yellow-500/10 hover:text-yellow-600"
+                          title="Manage Results"
+                          onClick={() => window.location.href = `/admin/events/${event.id}/results`}
+                        >
+                          <Trophy className="h-4 w-4" />
+                        </Button>
                         <EditEventDialog
                           event={event}
                           onEventUpdated={handleEventUpdate}

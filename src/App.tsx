@@ -18,11 +18,14 @@ import EventSettings from "./pages/EventSettings";
 import ActivityLogs from "./pages/ActivityLogs";
 import Settings from "./pages/Settings";
 import UserManagement from "./pages/UserManagement";
+import Scoreboard from '@/pages/Scoreboard';
+import EventResultEntry from '@/pages/admin/EventResultEntry';
 import NotFound from "./pages/NotFound";
 import { ForcePasswordChange } from "./pages/ForcePasswordChange";
 import { ProfileSetup } from "./pages/ProfileSetup";
 import Profile from "./pages/Profile";
 import EventActivity from "./pages/EventActivity";
+import { USER_ROLES } from "@/lib/constants";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +41,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Navigate to="/auth" replace />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/scoreboard" element={<Scoreboard />} />
                 <Route path="/force-password-change" element={
                   <ProtectedRoute>
                     <ForcePasswordChange />
@@ -56,6 +60,7 @@ const App = () => (
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/students" element={<Students />} />
                   <Route path="/events" element={<Events />} />
+                  <Route path="/admin/events/:eventId/results" element={<EventResultEntry />} />
                   <Route path="/registrations" element={<Registrations />} />
                   <Route path="/my-registrations" element={<MyRegistrations />} />
                   <Route path="/event-settings" element={<EventSettings />} />

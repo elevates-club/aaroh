@@ -1,6 +1,6 @@
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { Sun, Moon, LogOut, User } from 'lucide-react';
+import { Sun, Moon, LogOut, User, Trophy } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { getRoleLabel } from '@/lib/constants';
@@ -30,6 +30,14 @@ export function Header() {
             Aaroh <span className="text-[#facc15]">26</span>
           </h1>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="ml-4 border-yellow-500/20 text-yellow-600 hover:bg-yellow-500/10 hidden sm:flex"
+          onClick={() => navigate('/scoreboard')}
+        >
+          <Trophy className="mr-2 h-4 w-4" /> Scoreboard
+        </Button>
       </div>
 
       <div className="flex items-center gap-2">

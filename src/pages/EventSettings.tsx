@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Settings, Calendar, Users, ShieldAlert, Clock, Power, Bot, SlidersHorizontal, CheckCircle, Ban } from 'lucide-react';
+import { Loader2, Settings, Calendar, Users, ShieldAlert, Clock, Power, Bot, SlidersHorizontal, CheckCircle, Ban, Trophy } from 'lucide-react';
 import { logSystemActivity } from '@/utils/activityLogger';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -23,6 +23,7 @@ export default function EventSettings() {
         maxOffStageRegistrations: 5,
         registrationDeadlineDays: 2,
         globalRegistrationOpen: true,
+        scoreboardVisible: false,
     });
 
     useEffect(() => {
@@ -47,6 +48,7 @@ export default function EventSettings() {
                     if (s.key === 'max_off_stage_registrations') newSettings.maxOffStageRegistrations = val?.limit || 5;
                     if (s.key === 'registration_deadline_days') newSettings.registrationDeadlineDays = val?.days || 2;
                     if (s.key === 'global_registration_open') newSettings.globalRegistrationOpen = val?.enabled !== false;
+                    if (s.key === 'scoreboard_visible') newSettings.scoreboardVisible = val?.enabled === true;
                 });
                 setSettings(newSettings);
             }
@@ -71,6 +73,7 @@ export default function EventSettings() {
                 { key: 'max_off_stage_registrations', value: { limit: settings.maxOffStageRegistrations }, updated_by: user?.id },
                 { key: 'registration_deadline_days', value: { days: settings.registrationDeadlineDays }, updated_by: user?.id },
                 { key: 'global_registration_open', value: { enabled: settings.globalRegistrationOpen }, updated_by: user?.id },
+                { key: 'scoreboard_visible', value: { enabled: settings.scoreboardVisible }, updated_by: user?.id },
             ];
 
             const { error } = await supabase
@@ -297,6 +300,43 @@ export default function EventSettings() {
                     >
                         {settings.globalRegistrationOpen ? "Pause Registrations" : "Resume Registrations"}
                     </Button>
+                </Card>
+
+                {/* 5. SCOREBOARD VISIBILITY (12 Cols) */}
+                <Card className="md:col-span-12 border-border/50 bg-card shadow-sm hover:shadow-md transition-shadow p-8 flex flex-col md:flex-row justify-between items-center gap-6 rounded-[2rem]">
+                    <div className="flex items-center gap-6">
+                        <div className="h-14 w-14 rounded-[1.5rem] bg-yellow-500/10 flex items-center justify-center text-yellow-500">
+                            <Trophy className="h-7 w-7" />
+                        </div>
+                        <div>
+                            <h3 className="text-2xl font-bold text-foreground flex items-center gap-3">
+                                Scoreboard Visibility
+                                <Badge variant={settings.scoreboardVisible ? "default" : "outline"} className="uppercase text-[10px] tracking-widest">
+                                    {settings.scoreboardVisible ? "Live Publicly" : "Hidden"}
+                                </Badge>
+                            </h3>
+                            <p className="text-sm font-medium text-muted-foreground mt-1">
+                                Control when the scoreboard and results are visible to the public.
+                                <span className="block text-xs mt-1 opacity-70">
+                                    Turn this ON only during event days to reveal scores. Result entry buttons will also be hidden when OFF.
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        <span className={`text-sm font-bold uppercase tracking-wider ${settings.scoreboardVisible ? 'text-foreground' : 'text-muted-foreground'}`}>
+                            {settings.scoreboardVisible ? "Visible" : "Hidden"}
+                        </span>
+                        <Switch
+                            checked={settings.scoreboardVisible}
+                            disabled={saving}
+                            onCheckedChange={(checked) =>
+                                setSettings(prev => ({ ...prev, scoreboardVisible: checked }))
+                            }
+                            className="data-[state=checked]:bg-yellow-500 scale-150 mr-2"
+                        />
+                    </div>
                 </Card>
 
             </div>
