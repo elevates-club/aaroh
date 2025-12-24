@@ -25,6 +25,7 @@ import { ForcePasswordChange } from "./pages/ForcePasswordChange";
 import { ProfileSetup } from "./pages/ProfileSetup";
 import Profile from "./pages/Profile";
 import EventActivity from "./pages/EventActivity";
+import OgImage from "./pages/design/OgImage";
 import { USER_ROLES } from "@/lib/constants";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Navigate to="/auth" replace />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/design/og" element={<OgImage />} />
                 <Route path="/scoreboard" element={<Scoreboard />} />
                 <Route path="/force-password-change" element={
                   <ProtectedRoute>

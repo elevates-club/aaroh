@@ -104,7 +104,7 @@ export function AppSidebar() {
             <h2 className="text-xl font-black tracking-tighter text-foreground flex items-center gap-1">
               AAROH <span className="text-[#facc15]">26</span>
             </h2>
-            <p className="text-[10px] uppercase tracking-[0.3em] font-black text-muted-foreground/50">Arts Festival</p>
+            <p className="text-[10px] uppercase tracking-[0.3em] font-black text-muted-foreground/50">Decarto</p>
           </div>
         </div>
       </SidebarHeader>
