@@ -20,9 +20,10 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Users, Plus, Pencil, Trash2, Eye, Search } from 'lucide-react';
+import { Users, Plus, Pencil, Trash2, Eye, Search, ArrowUpDown, Filter } from 'lucide-react';
 import { USER_ROLES, getRoleLabel } from '@/lib/constants';
 import { logUserManagementActivity } from '@/utils/activityLogger';
 
@@ -41,6 +42,11 @@ export default function UserManagement() {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [roleFilter, setRoleFilter] = useState<string>('all');
+    const [sortConfig, setSortConfig] = useState<{ key: keyof User; direction: 'asc' | 'desc' }>({
+        key: 'created_at',
+        direction: 'desc'
+    });
 
     // Dialog states
     const [showAddDialog, setShowAddDialog] = useState(false);
@@ -273,19 +279,40 @@ export default function UserManagement() {
     const isEventManager = profile?.role && (Array.isArray(profile.role) ? profile.role.includes(USER_ROLES.EVENT_MANAGER) : profile.role === USER_ROLES.EVENT_MANAGER);
     const isAdmin = profile?.role && (Array.isArray(profile.role) ? profile.role.includes(USER_ROLES.ADMIN) : profile.role === USER_ROLES.ADMIN);
 
-    const filteredUsers = users.filter(user => {
-        const roles = Array.isArray(user.role) ? user.role : [user.role];
+    const filteredUsers = users
+        .filter(user => {
+            const roles = Array.isArray(user.role) ? user.role : [user.role];
 
-        // Event Managers cannot see Admins
-        if (isEventManager && !isAdmin && roles.includes(USER_ROLES.ADMIN)) {
-            return false;
-        }
+            // Event Managers cannot see Admins
+            if (isEventManager && !isAdmin && roles.includes(USER_ROLES.ADMIN)) {
+                return false;
+            }
 
-        const roleLabels = roles.map(r => getRoleLabel(r)).join(' ');
-        return user.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            roleLabels.toLowerCase().includes(searchQuery.toLowerCase());
-    });
+            // Role Filtering
+            if (roleFilter !== 'all') {
+                if (!roles.includes(roleFilter)) return false;
+            }
+
+            const roleLabels = roles.map(r => getRoleLabel(r)).join(' ');
+            return user.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                roleLabels.toLowerCase().includes(searchQuery.toLowerCase());
+        })
+        .sort((a, b) => {
+            const aValue = a[sortConfig.key];
+            const bValue = b[sortConfig.key];
+
+            if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+    const handleSort = (key: keyof User) => {
+        setSortConfig(current => ({
+            key,
+            direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc'
+        }));
+    };
 
     if (!isAdmin && !isEventManager) {
         return (
@@ -319,15 +346,37 @@ export default function UserManagement() {
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {/* Search */}
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Search users by name, email, or role..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10"
-                        />
+                    {/* Filters Toolbar */}
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Search users by name, email, or role..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-10"
+                            />
+                        </div>
+                        <div className="w-full md:w-[250px]">
+                            <Select value={roleFilter} onValueChange={setRoleFilter}>
+                                <SelectTrigger>
+                                    <div className="flex items-center gap-2">
+                                        <Filter className="w-4 h-4 text-muted-foreground" />
+                                        <SelectValue placeholder="Filter by Role" />
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Roles</SelectItem>
+                                    <SelectItem value={USER_ROLES.ADMIN}>Admin</SelectItem>
+                                    <SelectItem value={USER_ROLES.EVENT_MANAGER}>Event Manager</SelectItem>
+                                    <SelectItem value={USER_ROLES.FIRST_YEAR_COORDINATOR}>1st Year Coord</SelectItem>
+                                    <SelectItem value={USER_ROLES.SECOND_YEAR_COORDINATOR}>2nd Year Coord</SelectItem>
+                                    <SelectItem value={USER_ROLES.THIRD_YEAR_COORDINATOR}>3rd Year Coord</SelectItem>
+                                    <SelectItem value={USER_ROLES.FOURTH_YEAR_COORDINATOR}>4th Year Coord</SelectItem>
+                                    <SelectItem value={USER_ROLES.STUDENT}>Student</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
 
                     {/* Users Table */}
@@ -335,10 +384,25 @@ export default function UserManagement() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Email</TableHead>
+                                    <TableHead className="cursor-pointer hover:text-primary transition-colors" onClick={() => handleSort('full_name')}>
+                                        <div className="flex items-center gap-2">
+                                            Name
+                                            {sortConfig.key === 'full_name' && <ArrowUpDown className="w-3 h-3" />}
+                                        </div>
+                                    </TableHead>
+                                    <TableHead className="cursor-pointer hover:text-primary transition-colors" onClick={() => handleSort('email')}>
+                                        <div className="flex items-center gap-2">
+                                            Email
+                                            {sortConfig.key === 'email' && <ArrowUpDown className="w-3 h-3" />}
+                                        </div>
+                                    </TableHead>
                                     <TableHead>Roles</TableHead>
-                                    <TableHead>Created</TableHead>
+                                    <TableHead className="cursor-pointer hover:text-primary transition-colors" onClick={() => handleSort('created_at')}>
+                                        <div className="flex items-center gap-2">
+                                            Created
+                                            {sortConfig.key === 'created_at' && <ArrowUpDown className="w-3 h-3" />}
+                                        </div>
+                                    </TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
