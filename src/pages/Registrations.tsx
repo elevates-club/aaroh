@@ -103,8 +103,8 @@ export default function Registrations() {
       if (error) throw error;
       setRegistrations(data || []);
 
-      // Fetch registration limits and student counts for admin and event manager
-      if (hasRole(activeRole, USER_ROLES.ADMIN) || hasRole(activeRole, USER_ROLES.EVENT_MANAGER)) {
+      // Fetch registration limits and student counts for admin, event manager, and coordinators
+      if (hasRole(activeRole, USER_ROLES.ADMIN) || hasRole(activeRole, USER_ROLES.EVENT_MANAGER) || getCoordinatorYear(activeRole)) {
         await Promise.all([
           fetchRegistrationLimitsData(),
           fetchStudentRegistrationCounts(data || [])
@@ -445,8 +445,8 @@ export default function Registrations() {
                             <span>•</span>
                             <span className="truncate">{student.department}</span>
                           </div>
-                          {/* Registration Limit Badges for Admin */}
-                          {(hasRole(activeRole, USER_ROLES.ADMIN) || hasRole(activeRole, USER_ROLES.EVENT_MANAGER)) && (
+                          {/* Registration Limit Badges for Admin and Coordinator */}
+                          {(hasRole(activeRole, USER_ROLES.ADMIN) || hasRole(activeRole, USER_ROLES.EVENT_MANAGER) || getCoordinatorYear(activeRole)) && (
                             <div className="flex gap-2 mt-2">
                               <RegistrationLimitBadge
                                 currentCount={studentRegistrationCounts[student.id]?.onStage || 0}
@@ -497,7 +497,7 @@ export default function Registrations() {
                             </div>
 
                             <div className="flex items-center justify-end gap-2 mt-3 pt-2 border-t">
-                              {(hasRole(activeRole, USER_ROLES.ADMIN) || hasRole(activeRole, USER_ROLES.EVENT_MANAGER)) && registration.status === 'pending' && (
+                              {(hasRole(activeRole, USER_ROLES.ADMIN) || hasRole(activeRole, USER_ROLES.EVENT_MANAGER) || getCoordinatorYear(activeRole)) && registration.status === 'pending' && (
                                 <>
                                   <Button
                                     size="sm"

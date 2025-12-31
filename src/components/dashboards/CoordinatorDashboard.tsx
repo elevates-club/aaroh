@@ -17,8 +17,12 @@ import {
     Zap,
     Shield,
     Target,
-    LayoutDashboard
+    LayoutDashboard,
+    Check,
+    X
 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { logRegistrationActivity } from '@/utils/activityLogger';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -161,6 +165,48 @@ export function CoordinatorDashboard() {
             });
             const sorted = Object.entries(eventCounts).map(([id, info]) => ({ id, ...info })).sort((a, b) => b.count - a.count).slice(0, 5) as TopEvent[];
             setTopEvents(sorted);
+        }
+    };
+
+    const updateRegistrationStatus = async (registrationId: string, newStatus: 'approved' | 'rejected', studentName: string, eventName: string) => {
+        try {
+            const { error } = await supabase
+                .from('registrations')
+                .update({ status: newStatus })
+                .eq('id', registrationId);
+
+            if (error) throw error;
+
+            // Log activity
+            if (profile?.id) {
+                await logRegistrationActivity(
+                    profile.id,
+                    'registration_status_updated',
+                    {
+                        registration_id: registrationId,
+                        new_status: newStatus,
+                        student_name: studentName,
+                        event_name: eventName,
+                        registration_data: { id: registrationId, status: newStatus }
+                    }
+                );
+            }
+
+            toast({
+                title: newStatus === 'approved' ? 'Registration Approved' : 'Registration Rejected',
+                description: `${studentName}'s registration for ${eventName} has been ${newStatus}.`,
+                variant: newStatus === 'approved' ? 'default' : 'destructive',
+            });
+
+            // Refresh data
+            fetchAllData();
+        } catch (error) {
+            console.error('Error updating registration:', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to update registration status',
+                variant: 'destructive',
+            });
         }
     };
 
@@ -333,9 +379,37 @@ export function CoordinatorDashboard() {
                                                 <p className="text-xs text-muted-foreground truncate w-40">{reg.eventName}</p>
                                             </div>
                                         </div>
-                                        <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                                        <span className="text-[10px] font-bold text-muted-foreground uppercase mr-4">
                                             {formatDistanceToNow(new Date(reg.createdAt), { addSuffix: true })}
                                         </span>
+                                        {reg.status === 'pending' && (
+                                            <div className="flex items-center gap-1">
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    className="h-7 w-7 p-0 rounded-full text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        updateRegistrationStatus(reg.id, 'approved', reg.studentName, reg.eventName);
+                                                    }}
+                                                    title="Approve"
+                                                >
+                                                    <Check className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    className="h-7 w-7 p-0 rounded-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        updateRegistrationStatus(reg.id, 'rejected', reg.studentName, reg.eventName);
+                                                    }}
+                                                    title="Reject"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        )}
                                     </div>
                                 ))
                             ) : (
