@@ -61,7 +61,7 @@ const NotFound = () => {
       {/* Footer Text */}
       <div className="absolute bottom-8 left-0 right-0 text-center space-y-2">
         <div className="text-white/20 text-xs uppercase tracking-[0.2em]">
-          AAROH 2026 • Decarto
+          AAROH 2026 • EKCTC • Decarto
         </div>
         <div className="text-white/10 text-[10px] uppercase tracking-[0.3em] font-mono">
           Developed by Elevates

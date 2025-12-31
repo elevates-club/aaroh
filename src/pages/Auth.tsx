@@ -105,7 +105,7 @@ export default function Auth() {
           <div className="relative z-10 space-y-8">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-background border border-border/50 shadow-sm w-fit">
               <span className="h-2 w-2 rounded-full bg-primary animate-pulse"></span>
-              <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">Decarto</span>
+              <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">EKCTC | Decarto</span>
             </div>
 
             <h1 className="text-[8rem] xl:text-[10rem] font-black tracking-tighter text-foreground leading-[0.7] text-left">
@@ -133,7 +133,7 @@ export default function Auth() {
             <div className="lg:hidden text-center mb-6 space-y-2">
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 w-fit mx-auto mb-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></span>
-                <span className="text-[10px] font-bold tracking-widest uppercase text-primary">Decarto</span>
+                <span className="text-[10px] font-bold tracking-widest uppercase text-primary">EKCTC | Decarto</span>
               </div>
               <h1 className="text-4xl font-black tracking-tight text-foreground uppercase">
                 Aaroh <span className="text-[#facc15]">26</span>
@@ -296,7 +296,7 @@ export default function Auth() {
 
             <div className="pt-6 border-t border-border/40 text-center">
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground/50 font-medium">
-                © 2026 Aaroh · Powered By Decarto
+                © 2026 Aaroh · EKCTC · Powered By Decarto
               </p>
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground/40 font-bold mt-1">
                 Developed By Elevates

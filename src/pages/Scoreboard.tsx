@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Trophy, Medal, Star, Activity, ChevronRight, TrendingUp, ListOrdered } from 'lucide-react';
+import { Loader2, Trophy, Medal, Star, Activity, ChevronRight, TrendingUp, ListOrdered, Users } from 'lucide-react';
 
 interface ScoreParams {
     year: string;
@@ -54,6 +54,7 @@ export default function Scoreboard() {
         third: 'Third Year',
         fourth: 'Fourth Year',
     });
+    const [totalUsers, setTotalUsers] = useState(0);
 
     useEffect(() => {
         fetchData();
@@ -110,6 +111,10 @@ export default function Scoreboard() {
             const { data: stats, error: statsError } = await supabase
                 .from('scoreboard_stats' as any)
                 .select('*');
+
+            // Fetch total users count (students)
+            const { count } = await supabase.from('students').select('id', { count: 'exact' });
+            setTotalUsers(count || 0);
 
             if (statsError) throw statsError;
 
@@ -243,7 +248,7 @@ export default function Scoreboard() {
                 {/* Credits Footer */}
                 <div className="absolute bottom-6 left-0 right-0 text-center pointer-events-none">
                     <p className="text-white/20 text-xs font-mono tracking-widest uppercase">
-                        Developed by Elevates
+                        EKCTC • Developed by Elevates
                     </p>
                 </div>
             </div>
@@ -416,7 +421,7 @@ export default function Scoreboard() {
             {/* Credits Footer */}
             <div className="absolute bottom-6 left-0 right-0 text-center pointer-events-none">
                 <p className="text-white/20 text-xs font-mono tracking-widest uppercase">
-                    Developed by Elevates
+                    EKCTC • Developed by Elevates
                 </p>
             </div>
 

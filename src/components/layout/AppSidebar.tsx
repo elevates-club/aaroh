@@ -101,10 +101,13 @@ export function AppSidebar() {
             </div>
           </div>
           <div className="group-data-[collapsible=icon]:hidden">
-            <h2 className="text-xl font-black tracking-tighter text-foreground flex items-center gap-1">
-              AAROH <span className="text-[#facc15]">26</span>
-            </h2>
-            <p className="text-[10px] uppercase tracking-[0.3em] font-black text-muted-foreground/50">Decarto</p>
+            <div className="flex flex-col">
+              <h2 className="text-xl font-black tracking-tighter text-foreground flex items-center gap-1">
+                AAROH <span className="text-[#facc15]">26</span>
+              </h2>
+              <p className="text-[10px] uppercase tracking-[0.3em] font-black text-muted-foreground/70">EKCTC</p>
+              <p className="text-[8px] uppercase tracking-[0.3em] font-black text-muted-foreground/40">Decarto</p>
+            </div>
           </div>
         </div>
       </SidebarHeader>
