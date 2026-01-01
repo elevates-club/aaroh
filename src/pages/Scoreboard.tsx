@@ -248,7 +248,7 @@ export default function Scoreboard() {
                 {/* Credits Footer */}
                 <div className="absolute bottom-6 left-0 right-0 text-center pointer-events-none">
                     <p className="text-white/20 text-xs font-mono tracking-widest uppercase">
-                        EKCTC • Developed by Elevates
+                        EKCTC | Decarto • Developed by Elevates
                     </p>
                 </div>
             </div>
@@ -421,7 +421,7 @@ export default function Scoreboard() {
             {/* Credits Footer */}
             <div className="absolute bottom-6 left-0 right-0 text-center pointer-events-none">
                 <p className="text-white/20 text-xs font-mono tracking-widest uppercase">
-                    EKCTC • Developed by Elevates
+                    EKCTC | Decarto • Developed by Elevates
                 </p>
             </div>
 
