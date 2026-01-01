@@ -316,48 +316,53 @@ export default function Events() {
                       </div>
                     </div>
 
-                    {(hasRole(activeRole, USER_ROLES.ADMIN) || hasRole(activeRole, USER_ROLES.EVENT_MANAGER)) && scoreboardVisible && (
+                    {(hasRole(activeRole, USER_ROLES.ADMIN) || hasRole(activeRole, USER_ROLES.EVENT_MANAGER)) && (
                       <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 rounded-full hover:bg-yellow-500/10 hover:text-yellow-600"
-                          title="Manage Results"
-                          onClick={() => window.location.href = `/admin/events/${event.id}/results`}
-                        >
-                          <Trophy className="h-4 w-4" />
-                        </Button>
-                        <EditEventDialog
-                          event={event}
-                          onEventUpdated={handleEventUpdate}
-                          trigger={
-                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-primary/10 hover:text-primary">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          }
-                        />
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete the event
-                                and remove all associated data.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteEvent(event.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                Delete Event
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        {scoreboardVisible ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-full hover:bg-yellow-500/10 hover:text-yellow-600"
+                            title="Manage Results"
+                            onClick={() => window.location.href = `/admin/events/${event.id}/results`}
+                          >
+                            <Trophy className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <>
+                            <EditEventDialog
+                              event={event}
+                              onEventUpdated={handleEventUpdate}
+                              trigger={
+                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-primary/10 hover:text-primary">
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              }
+                            />
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the event
+                                    and remove all associated data.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteEvent(event.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    Delete Event
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
