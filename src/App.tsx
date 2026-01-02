@@ -25,6 +25,7 @@ import { ForcePasswordChange } from "./pages/ForcePasswordChange";
 import { ProfileSetup } from "./pages/ProfileSetup";
 import Profile from "./pages/Profile";
 import EventActivity from "./pages/EventActivity";
+import CoordinatorAnalytics from "./pages/CoordinatorAnalytics";
 import OgImage from "./pages/design/OgImage";
 import { USER_ROLES } from "@/lib/constants";
 
@@ -64,6 +65,7 @@ const App = () => (
                   <Route path="/events" element={<Events />} />
                   <Route path="/admin/events/:eventId/results" element={<EventResultEntry />} />
                   <Route path="/registrations" element={<Registrations />} />
+                  <Route path="/analytics" element={<CoordinatorAnalytics />} />
                   <Route path="/my-registrations" element={<MyRegistrations />} />
                   <Route path="/event-settings" element={<EventSettings />} />
                   <Route path="/activity-logs" element={<ActivityLogs />} />
@@ -82,4 +84,5 @@ const App = () => (
   </QueryClientProvider >
 );
 
+// Force reload
 export default App;

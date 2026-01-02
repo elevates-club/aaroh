@@ -63,6 +63,7 @@ export function AppSidebar() {
     { title: 'Students', url: '/students', icon: Users, group: 'Data' },
     { title: 'Events', url: '/events', icon: Calendar, group: 'Main' },
     { title: 'Registrations', url: '/registrations', icon: FileText, group: 'Data' },
+    { title: 'Analytics', url: '/analytics', icon: Activity, group: 'Insights' },
   ];
 
   const studentItems = [

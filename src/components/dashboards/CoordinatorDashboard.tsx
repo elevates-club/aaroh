@@ -347,27 +347,29 @@ export function CoordinatorDashboard() {
                 </Card>
 
                 {/* 5. POPULARITY (6 Cols) */}
-                <Card className="md:col-span-6 bento-card border-none shadow-sm h-[400px] p-8 flex flex-col">
-                    <div className="flex items-center justify-between mb-8">
+                <Card className="md:col-span-6 bento-card border-none shadow-sm h-[400px] p-0 flex flex-col overflow-hidden">
+                    <div className="p-8 pb-4 flex items-center justify-between border-b border-border/50">
                         <h3 className="text-lg font-bold text-foreground">Top Events</h3>
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full"><Trophy className="h-4 w-4" /></Button>
                     </div>
-                    <div className="flex-1 space-y-4">
-                        {topEvents.map((event, index) => (
-                            <div key={event.id} className="flex items-center justify-between group p-2 hover:bg-muted/50 rounded-xl transition-colors">
-                                <div className="flex items-center gap-4">
-                                    <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground">
-                                        {index + 1}
+                    <ScrollArea className="flex-1 p-0">
+                        <div className="p-8 pt-4 space-y-4">
+                            {topEvents.map((event, index) => (
+                                <div key={event.id} className="flex items-center justify-between group p-2 hover:bg-muted/50 rounded-xl transition-colors">
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground">
+                                            {index + 1}
+                                        </div>
+                                        <div className="space-y-0.5">
+                                            <p className="text-sm font-bold text-foreground">{event.name}</p>
+                                            <p className="text-[10px] uppercase font-bold text-muted-foreground opacity-60">{event.category.replace('_', ' ')}</p>
+                                        </div>
                                     </div>
-                                    <div className="space-y-0.5">
-                                        <p className="text-sm font-bold text-foreground">{event.name}</p>
-                                        <p className="text-[10px] uppercase font-bold text-muted-foreground opacity-60">{event.category.replace('_', ' ')}</p>
-                                    </div>
+                                    <Badge variant="secondary" className="font-bold">{event.count}</Badge>
                                 </div>
-                                <Badge variant="secondary" className="font-bold">{event.count}</Badge>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    </ScrollArea>
                 </Card>
 
                 {/* 6. COHORT AUDIT (6 Cols) */}

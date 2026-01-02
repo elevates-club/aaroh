@@ -313,12 +313,13 @@ export default function Registrations() {
     <div className="min-h-screen bg-background">
       <div className="p-4 sm:p-6 lg:p-8 space-y-6">
         {/* Modern Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-[#0a0a0a] border border-[#facc15]/20 p-6 sm:p-8 shadow-lg">
+        {/* Modern Header - Responsive */}
+        <div className="relative overflow-hidden rounded-2xl bg-[#0a0a0a] border border-[#facc15]/20 p-4 sm:p-6 lg:p-8 shadow-lg">
           <div className="absolute inset-0 bg-gradient-to-br from-[#facc15]/5 to-transparent"></div>
           <div className="relative z-10">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="min-w-0 flex-1">
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 text-white">
+            <div className="flex flex-col gap-4">
+              <div className="min-w-0">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 text-white break-words">
                   {(hasRole(activeRole, USER_ROLES.ADMIN) || hasRole(activeRole, USER_ROLES.EVENT_MANAGER)) ? (
                     <><span className="text-[#facc15]">All</span> Registrations</>
                   ) : (
@@ -329,21 +330,19 @@ export default function Registrations() {
                   Manage event registrations
                 </p>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              </div>
             </div>
           </div>
         </div>
 
-        {/* View Mode Tabs */}
+        {/* View Mode Tabs - Stack on Mobile */}
         <Card className="border-0 shadow-lg">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex flex-col sm:flex-row gap-2 flex-1">
+          <CardContent className="p-3 sm:p-6">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:flex sm:flex-row gap-2 w-full">
                 <Button
                   variant={viewMode === 'students' ? 'default' : 'outline'}
                   onClick={() => setViewMode('students')}
-                  className="flex-1 sm:flex-none"
+                  className="w-full sm:w-auto sm:flex-1 justify-center"
                 >
                   <Users className="mr-2 h-4 w-4" />
                   Students
@@ -351,7 +350,7 @@ export default function Registrations() {
                 <Button
                   variant={viewMode === 'on_stage' ? 'default' : 'outline'}
                   onClick={() => setViewMode('on_stage')}
-                  className="flex-1 sm:flex-none"
+                  className="w-full sm:w-auto sm:flex-1 justify-center"
                 >
                   <Palette className="mr-2 h-4 w-4" />
                   On-Stage
@@ -359,7 +358,7 @@ export default function Registrations() {
                 <Button
                   variant={viewMode === 'off_stage' ? 'default' : 'outline'}
                   onClick={() => setViewMode('off_stage')}
-                  className="flex-1 sm:flex-none"
+                  className="w-full sm:w-auto sm:flex-1 justify-center"
                 >
                   <Palette className="mr-2 h-4 w-4" />
                   Off-Stage
@@ -369,23 +368,23 @@ export default function Registrations() {
           </CardContent>
         </Card>
 
-        {/* Search and Filters */}
+        {/* Search and Filters - Stack on Mobile */}
         <Card className="border-0 shadow-lg">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                <div className="relative flex-1">
+          <CardContent className="p-3 sm:p-6">
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative w-full">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
-                    placeholder="Search by student name, roll number, or event..."
-                    className="pl-10 h-11 bg-card border-border/50 shadow-sm focus:bg-card transition-colors"
+                    placeholder="Search students, roll no, or events..."
+                    className="pl-10 h-11 bg-card border-border/50 shadow-sm focus:bg-card transition-colors w-full"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
 
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full sm:w-[140px] h-11 bg-card border-border/50 shadow-sm focus:bg-card transition-colors">
+                  <SelectTrigger className="w-full sm:w-[180px] h-11 bg-card border-border/50 shadow-sm focus:bg-card transition-colors">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -443,36 +442,41 @@ export default function Registrations() {
                 const student = registrations[0].student;
                 return (
                   <Card key={key} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-2 min-w-0 flex-1">
-                          <CardTitle className="text-lg font-bold truncate">{student.name}</CardTitle>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span className="font-mono">{student.roll_number}</span>
-                            <span>•</span>
-                            <span className="truncate">{student.department}</span>
-                          </div>
-                          {/* Registration Limit Badges for Admin and Coordinator */}
-                          {(hasRole(activeRole, USER_ROLES.ADMIN) || hasRole(activeRole, USER_ROLES.EVENT_MANAGER) || getCoordinatorYear(activeRole)) && (
-                            <div className="flex gap-2 mt-2">
-                              <RegistrationLimitBadge
-                                currentCount={studentRegistrationCounts[student.id]?.onStage || 0}
-                                limit={registrationLimits.maxOnStageRegistrations}
-                                eventType="on_stage"
-                                showIcon={true}
-                              />
-                              <RegistrationLimitBadge
-                                currentCount={studentRegistrationCounts[student.id]?.offStage || 0}
-                                limit={registrationLimits.maxOffStageRegistrations}
-                                eventType="off_stage"
-                                showIcon={true}
-                              />
+                    <CardHeader className="pb-3 p-4">
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-start justify-between w-full">
+                          <div className="space-y-1 min-w-0 pr-2">
+                            <div className="flex items-center gap-2">
+                              <CardTitle className="text-lg font-bold truncate leading-tight">{student.name}</CardTitle>
                             </div>
-                          )}
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+                              <span className="font-mono">{student.roll_number}</span>
+                              <span className="hidden sm:inline">•</span>
+                              <span className="truncate max-w-[150px] block sm:inline">{student.department}</span>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="text-xs shrink-0 whitespace-nowrap">
+                            {registrations.length} Reg
+                          </Badge>
                         </div>
-                        <Badge variant="outline" className="text-xs">
-                          {registrations.length} event{registrations.length !== 1 ? 's' : ''}
-                        </Badge>
+
+                        {/* Registration Limit Badges - Allow wrap */}
+                        {(hasRole(activeRole, USER_ROLES.ADMIN) || hasRole(activeRole, USER_ROLES.EVENT_MANAGER) || getCoordinatorYear(activeRole)) && (
+                          <div className="flex flex-wrap gap-2 pt-1 border-t border-dashed">
+                            <RegistrationLimitBadge
+                              currentCount={studentRegistrationCounts[student.id]?.onStage || 0}
+                              limit={registrationLimits.maxOnStageRegistrations}
+                              eventType="on_stage"
+                              showIcon={true}
+                            />
+                            <RegistrationLimitBadge
+                              currentCount={studentRegistrationCounts[student.id]?.offStage || 0}
+                              limit={registrationLimits.maxOffStageRegistrations}
+                              eventType="off_stage"
+                              showIcon={true}
+                            />
+                          </div>
+                        )}
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -492,24 +496,26 @@ export default function Registrations() {
                               </Badge>
                             </div>
 
-                            <div className="space-y-1 text-xs text-muted-foreground">
+                            <div className="space-y-1 text-xs text-muted-foreground mt-2">
+                              {registration.event.venue && (
+                                <div className="flex items-center gap-2">
+                                  <MapPin className="h-3 w-3 shrink-0" />
+                                  <span className="truncate">{registration.event.venue}</span>
+                                </div>
+                              )}
                               <div className="flex items-center gap-2">
-                                <MapPin className="h-3 w-3" />
-                                <span className="truncate">{registration.event.venue}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Calendar className="h-3 w-3" />
+                                <Calendar className="h-3 w-3 shrink-0" />
                                 <span>Registered: {format(new Date(registration.created_at), 'MMM dd')}</span>
                               </div>
                             </div>
 
-                            <div className="flex items-center justify-end gap-2 mt-3 pt-2 border-t">
+                            <div className="flex flex-wrap items-center justify-end gap-2 mt-3 pt-2 border-t">
                               {(hasRole(activeRole, USER_ROLES.ADMIN) || hasRole(activeRole, USER_ROLES.EVENT_MANAGER) || getCoordinatorYear(activeRole)) && registration.status === 'pending' && (
                                 <>
                                   <Button
                                     size="sm"
                                     onClick={() => updateRegistrationStatus(registration.id, 'approved')}
-                                    className="h-7 px-2 text-xs bg-green-600 hover:bg-green-700"
+                                    className="h-8 px-3 text-xs flex-1 sm:flex-none bg-green-600 hover:bg-green-700"
                                   >
                                     Approve
                                   </Button>
@@ -517,7 +523,7 @@ export default function Registrations() {
                                     size="sm"
                                     variant="destructive"
                                     onClick={() => updateRegistrationStatus(registration.id, 'rejected')}
-                                    className="h-7 px-2 text-xs"
+                                    className="h-8 px-3 text-xs flex-1 sm:flex-none"
                                   >
                                     Reject
                                   </Button>
@@ -568,15 +574,15 @@ export default function Registrations() {
                 return (
                   <Card key={key} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300">
                     <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-2 min-w-0 flex-1">
-                          <CardTitle className="text-lg font-bold truncate">{event.name}</CardTitle>
-                          <div className="flex items-center gap-2">
-                            <Badge className={`${getCategoryColor(event.category)} text-xs`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <CardTitle className="text-lg font-bold truncate leading-tight pr-1">{event.name}</CardTitle>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge className={`${getCategoryColor(event.category)} text-xs whitespace-nowrap`}>
                               {event.category === 'on_stage' ? 'On-Stage' : 'Off-Stage'}
                             </Badge>
-                            <span className="text-sm text-muted-foreground">
-                              {registrations.length} participant{registrations.length !== 1 ? 's' : ''}
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">
+                              {registrations.length} participants
                             </span>
                           </div>
                         </div>
