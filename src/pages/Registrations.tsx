@@ -95,6 +95,13 @@ export default function Registrations() {
         const year = getCoordinatorYear(activeRole);
         if (year) {
           query = query.eq('student.year', year);
+        } else {
+          // STRICT SECURITY: If user is not admin/manager but we can't determine the year,
+          // DO NOT fetch all data. Instead, return valid empty set to prevent data leakage.
+          console.warn("Coordinator role detected but no year found. Aborting fetch.");
+          setRegistrations([]);
+          setLoading(false);
+          return;
         }
       }
 
