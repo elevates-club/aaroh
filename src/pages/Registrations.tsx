@@ -433,16 +433,16 @@ export default function Registrations() {
                   <div className="p-4 sm:p-5 relative z-10 flex flex-col gap-3 sm:gap-4">
                     <div className="flex justify-between items-start gap-3">
                       <div className="space-y-1 min-w-0 flex-1">
-                        <h3 className="font-bold text-base sm:text-lg leading-tight tracking-tight text-white group-hover:text-yellow-400 transition-colors break-words">
+                        <h3 className="font-bold text-base sm:text-lg leading-tight tracking-tight text-foreground dark:text-white group-hover:text-amber-600 dark:group-hover:text-yellow-400 transition-colors break-words">
                           {student.name}
                         </h3>
                         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                          <span className="text-[10px] sm:text-xs font-mono bg-white/5 px-2 py-0.5 rounded border border-white/5 text-gray-300">{student.roll_number}</span>
-                          <span className="hidden xs:inline text-white/20 text-[10px]">•</span>
-                          <span className="truncate max-w-[100px] text-[10px] sm:text-xs text-gray-400 font-medium">{student.department ?? 'No Dept'}</span>
+                          <span className="text-[10px] sm:text-xs font-mono bg-muted dark:bg-white/5 px-2 py-0.5 rounded border border-border dark:border-white/5 text-muted-foreground dark:text-gray-300">{student.roll_number}</span>
+                          <span className="hidden xs:inline text-border dark:text-white/20 text-[10px]">•</span>
+                          <span className="truncate max-w-[100px] text-[10px] sm:text-xs text-muted-foreground dark:text-gray-400 font-medium">{student.department ?? 'No Dept'}</span>
                         </div>
                       </div>
-                      <div className="h-7 w-7 sm:h-8 sm:w-8 shrink-0 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 group-hover:bg-yellow-500/10 group-hover:text-yellow-500 group-hover:border-yellow-500/20 transition-all duration-300">
+                      <div className="h-7 w-7 sm:h-8 sm:w-8 shrink-0 rounded-full bg-muted dark:bg-white/5 border border-border dark:border-white/10 flex items-center justify-center text-muted-foreground dark:text-gray-400 group-hover:bg-amber-500/10 dark:group-hover:bg-yellow-500/10 group-hover:text-amber-600 dark:group-hover:text-yellow-500 group-hover:border-amber-500/20 dark:group-hover:border-yellow-500/20 transition-all duration-300">
                         <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       </div>
                     </div>
@@ -460,7 +460,7 @@ export default function Registrations() {
                             Approved
                           </span>
                         ) : (
-                          <span className="text-[10px] sm:text-[11px] text-gray-400 font-medium">
+                          <span className="text-[10px] sm:text-[11px] text-muted-foreground dark:text-gray-400 font-medium">
                             All Checked
                           </span>
                         )}
@@ -569,10 +569,10 @@ export default function Registrations() {
                             <div className="flex items-center gap-2 justify-end shrink-0">
                               {/* Status Badge */}
                               <span className={`text-[9px] sm:text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border ${registration.status === 'pending'
-                                  ? 'bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-500 border-amber-200 dark:border-amber-500/20'
-                                  : (registration.status === 'approved'
-                                    ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-500 border-emerald-200 dark:border-emerald-500/20'
-                                    : 'bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-500 border-red-200 dark:border-red-500/20')
+                                ? 'bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-500 border-amber-200 dark:border-amber-500/20'
+                                : (registration.status === 'approved'
+                                  ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-500 border-emerald-200 dark:border-emerald-500/20'
+                                  : 'bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-500 border-red-200 dark:border-red-500/20')
                                 }`}>
                                 {registration.status}
                               </span>

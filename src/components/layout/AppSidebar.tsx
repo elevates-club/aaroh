@@ -35,7 +35,7 @@ import { SidebarStatus } from './SidebarStatus';
 
 export function AppSidebar() {
   const location = useLocation();
-  const { profile, signOut, signingOut } = useAuth();
+  const { profile, signOut } = useAuth();
   const { setOpenMobile, isMobile } = useSidebar();
   const { activeRole } = useRole();
 
@@ -108,8 +108,8 @@ export function AppSidebar() {
               <h2 className="text-xl font-black tracking-tighter text-foreground flex items-center gap-1">
                 AAROH <span className="text-[#facc15]">26</span>
               </h2>
-              <p className="text-[10px] uppercase tracking-[0.3em] font-black text-muted-foreground/70">EKCTC</p>
-              <p className="text-[8px] uppercase tracking-[0.3em] font-black text-muted-foreground/40">Decarto</p>
+              <p className="text-[10px] uppercase tracking-[0.3em] font-black text-muted-foreground/90 dark:text-muted-foreground/70">EKCTC</p>
+              <p className="text-[8px] uppercase tracking-[0.3em] font-black text-muted-foreground/60 dark:text-muted-foreground/40">Decarto</p>
             </div>
           </div>
         </div>
@@ -175,11 +175,10 @@ export function AppSidebar() {
               size="sm"
               className="w-full justify-start gap-3 hover:bg-destructive/10 hover:text-destructive text-muted-foreground font-bold rounded-2xl transition-all group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:h-12 group-data-[collapsible=icon]:w-12 group-data-[collapsible=icon]:bg-muted/30"
               onClick={() => signOut()}
-              disabled={signingOut}
             >
               <LogOut className="h-5 w-5" />
               <span className="text-xs font-black uppercase tracking-[0.1em] group-data-[collapsible=icon]:hidden">
-                {signingOut ? 'Logging out...' : 'Logout'}
+                Logout
               </span>
             </Button>
           </div>
@@ -187,9 +186,9 @@ export function AppSidebar() {
 
         {/* Brand Credits */}
         <div className="mt-6 pt-4 border-t border-border/40 group-data-[collapsible=icon]:hidden">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/30 font-black text-center leading-relaxed">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60 dark:text-muted-foreground/30 font-black text-center leading-relaxed">
             Aaroh Console <br />
-            <span className="text-primary/50">Developed By Elevates</span>
+            <span className="text-primary/70 dark:text-primary/50">Developed By Elevates</span>
           </p>
         </div>
 
