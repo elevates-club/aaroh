@@ -138,6 +138,17 @@ export default function Auth() {
               <h1 className="text-4xl font-black tracking-tight text-foreground uppercase">
                 Aaroh <span className="text-[#facc15]">26</span>
               </h1>
+              
+              {/* Mobile Logo - Squared way */}
+              <div className="lg:hidden flex justify-center mt-6 mb-4">
+                <div className="w-28 h-28 overflow-hidden rounded-lg border-2 border-primary/20 shadow-md transform rotate-2 hover:rotate-0 transition-transform duration-300">
+                  <img 
+                    src="/clogo.jpeg" 
+                    alt="Aaroh Logo" 
+                    className="w-full h-full object-cover scale-110"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="text-center lg:text-left space-y-3">
