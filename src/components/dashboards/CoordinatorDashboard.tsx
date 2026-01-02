@@ -31,6 +31,7 @@ import { USER_ROLES, getYearLabel } from '@/lib/constants';
 import { hasRole, getCoordinatorYear as getYearFromRole } from '@/lib/roleUtils';
 import { useNavigate } from 'react-router-dom';
 import { format, formatDistanceToNow } from 'date-fns';
+import { SystemError } from '@/components/SystemError';
 
 interface EventAtLimit {
     id: string;
@@ -73,6 +74,15 @@ export function CoordinatorDashboard() {
     const [loading, setLoading] = useState(true);
 
     const coordinatorYear = getYearFromRole(activeRole);
+
+    if (!coordinatorYear) {
+        return (
+            <SystemError
+                title="Configuration Error"
+                message="We could not determine which year you are coordinating. Please check your role assignments."
+            />
+        );
+    }
 
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
