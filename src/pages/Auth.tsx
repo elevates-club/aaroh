@@ -144,16 +144,17 @@ export default function Auth() {
               <h2 className="text-4xl font-black tracking-tight text-foreground">
                 {activeTab === 'signin' ? 'Welcome Back' : 'Get Started'}
               </h2>
-              
+
               {/* Logo between heading and welcome message */}
-              <div className="flex justify-center lg:justify-start -mt-2">
-                <img 
-                  src="/clogo.jpeg" 
-                  alt="Aaroh Logo" 
-                  className="h-24 w-auto object-contain"
+              {/* Logo between heading and welcome message */}
+              <div className="flex justify-center -mt-2 w-full overflow-hidden lg:justify-start lg:overflow-visible relative">
+                <img
+                  src="/clogo.jpeg"
+                  alt="Aaroh Logo"
+                  className="h-14 w-[130%] -ml-[15%] object-fill opacity-75 lg:h-24 lg:w-full lg:max-w-full lg:ml-0 lg:object-fill lg:opacity-90 lg:filter-none filter blur-[0.5px] contrast-[1.2] brightness-90 hue-rotate-15"
                 />
               </div>
-              
+
               <p className="text-base text-muted-foreground font-medium">
                 {activeTab === 'signin' ? 'Access your dashboard to continue.' : 'Create your account to join the platform.'}
               </p>
