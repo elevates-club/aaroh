@@ -130,25 +130,24 @@ export default function Auth() {
         <div className="flex items-center justify-center p-8 lg:p-16 relative bg-card h-full">
           <div className="w-full max-w-md space-y-10">
             {/* Mobile Branding Header */}
-            <div className="lg:hidden text-center mb-6 space-y-2">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 w-fit mx-auto mb-2">
+            <div className="lg:hidden text-center mb-6 space-y-2 relative">
+              {/* Stretched Logo - Mobile Only with Overlap */}
+              <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-10 w-32 h-24 overflow-visible">
+                <img 
+                  src="/clogo.jpeg" 
+                  alt="Logo" 
+                  className="w-full h-full object-cover opacity-90"
+                  style={{ transform: 'scaleX(1.4) scaleY(0.8) rotate(-2deg)' }}
+                />
+              </div>
+              
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 w-fit mx-auto mb-2 relative z-20">
                 <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></span>
                 <span className="text-[10px] font-bold tracking-widest uppercase text-primary">EKCTC | Decarto</span>
               </div>
-              <h1 className="text-4xl font-black tracking-tight text-foreground uppercase">
+              <h1 className="text-4xl font-black tracking-tight text-foreground uppercase relative z-20">
                 Aaroh <span className="text-[#facc15]">26</span>
               </h1>
-              
-              {/* Mobile Logo - Squared way */}
-              <div className="lg:hidden flex justify-center mt-6 mb-4">
-                <div className="w-28 h-28 overflow-hidden rounded-lg border-2 border-primary/20 shadow-md transform rotate-2 hover:rotate-0 transition-transform duration-300">
-                  <img 
-                    src="/clogo.jpeg" 
-                    alt="Aaroh Logo" 
-                    className="w-full h-full object-cover scale-110"
-                  />
-                </div>
-              </div>
             </div>
 
             <div className="text-center lg:text-left space-y-3">
