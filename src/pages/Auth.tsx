@@ -146,7 +146,7 @@ export default function Auth() {
               </h2>
               
               {/* Logo between heading and welcome message */}
-              <div className="flex justify-center lg:justify-start py-4">
+              <div className="flex justify-center lg:justify-start -mt-2">
                 <img 
                   src="/clogo.jpeg" 
                   alt="Aaroh Logo" 
