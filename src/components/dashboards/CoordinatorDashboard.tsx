@@ -75,15 +75,6 @@ export function CoordinatorDashboard() {
 
     const coordinatorYear = getYearFromRole(activeRole);
 
-    if (!coordinatorYear) {
-        return (
-            <SystemError
-                title="Configuration Error"
-                message="We could not determine which year you are coordinating. Please check your role assignments."
-            />
-        );
-    }
-
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
             const cards = document.getElementsByClassName('bento-card');
@@ -219,6 +210,15 @@ export function CoordinatorDashboard() {
             });
         }
     };
+
+    if (!coordinatorYear) {
+        return (
+            <SystemError
+                title="Configuration Error"
+                message="We could not determine which year you are coordinating. Please check your role assignments."
+            />
+        );
+    }
 
     return (
         <div className="p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1600px] mx-auto">

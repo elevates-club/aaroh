@@ -11,7 +11,8 @@ import {
   LogOut,
   ChevronRight,
   Sparkles,
-  HelpCircle
+  HelpCircle,
+  BarChart3
 } from 'lucide-react';
 import {
   Sidebar,
@@ -56,6 +57,7 @@ export function AppSidebar() {
     { title: 'Registrations', url: '/registrations', icon: FileText, group: 'Data' },
     { title: 'Event Settings', url: '/event-settings', icon: Settings, group: 'Tools' },
     { title: 'Event Activity', url: '/event-activity', icon: Activity, group: 'Tools' },
+    { title: 'Insights', url: '/event-analytics', icon: BarChart3, group: 'Data' },
   ];
 
   const coordinatorItems = [
