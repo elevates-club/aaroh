@@ -150,7 +150,7 @@ export default function Auth() {
                 <img 
                   src="/clogo.jpeg" 
                   alt="Aaroh Logo" 
-                  className="w-20 h-20 object-cover"
+                  className="h-24 w-auto object-contain"
                 />
               </div>
               
