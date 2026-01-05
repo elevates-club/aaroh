@@ -13,7 +13,8 @@ import {
     PieChart,
     Mic2,
     CalendarCheck,
-    Download
+    Download,
+    XCircle
 } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -54,6 +55,7 @@ export default function EventAnalytics() {
     const [totalUniqueStudents, setTotalUniqueStudents] = useState(0);
     const [yearStats, setYearStats] = useState<YearStats[]>([]);
     const [categoryStats, setCategoryStats] = useState({ onStage: 0, offStage: 0, onStageEvents: 0, offStageEvents: 0 });
+    const [rejectedCount, setRejectedCount] = useState(0);
 
     useEffect(() => {
         fetchAnalytics();
@@ -84,6 +86,14 @@ export default function EventAnalytics() {
                 .neq('status', 'rejected');
 
             if (regError) throw regError;
+
+            // Fetch rejected count
+            const { count: rejected } = await supabase
+                .from('registrations')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'rejected');
+
+            setRejectedCount(rejected || 0);
 
             // Process data in memory
             const participationMap: Record<string, EventParticipation> = {};
@@ -257,6 +267,16 @@ export default function EventAnalytics() {
                     <CardContent>
                         <div className="text-2xl font-bold text-red-500">{capacityWatchEvents.length}</div>
                         <p className="text-xs text-muted-foreground">Events near capacity (&gt;80%)</p>
+                    </CardContent>
+                </Card>
+                <Card className="border-none shadow-sm bg-card">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Rejected Registrations</CardTitle>
+                        <XCircle className="h-4 w-4 text-destructive" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-destructive">{rejectedCount}</div>
+                        <p className="text-xs text-muted-foreground">Total rejected entries</p>
                     </CardContent>
                 </Card>
             </div>

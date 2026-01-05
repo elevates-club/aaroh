@@ -67,6 +67,7 @@ export function CoordinatorDashboard() {
         myRegistrations: 0,
         pendingApprovals: 0,
         unregisteredStudents: 0,
+        rejectedRegistrations: 0,
     });
     const [eventsAtLimit, setEventsAtLimit] = useState<EventAtLimit[]>([]);
     const [recentRegistrations, setRecentRegistrations] = useState<RecentRegistration[]>([]);
@@ -111,13 +112,20 @@ export function CoordinatorDashboard() {
     const fetchBasicStats = async (year: 'first' | 'second' | 'third' | 'fourth') => {
         const { count: studentsCount } = await supabase.from('students').select('id', { count: 'exact' }).eq('year', year);
         const { count: eventsCount } = await supabase.from('events').select('id', { count: 'exact' }).eq('is_active', true);
-        const { data: regData } = await supabase.from('registrations').select(`id, status, student:students!inner(year)`).eq('student.year', year);
+        const { data: regData } = await supabase.from('registrations').select(`id, status, student:students!inner(year)`).eq('student.year', year).neq('status', 'rejected');
+
+        // Fetch rejected explicitly with inner join for year filtering
+        const { count: rejectedCount } = await supabase
+            .from('registrations')
+            .select('id, student:students!inner(year)', { count: 'exact', head: true })
+            .eq('student.year', year)
+            .eq('status', 'rejected');
 
         const registrationsCount = regData?.length || 0;
         const pendingCount = regData?.filter(r => r.status === 'pending').length || 0;
 
         const { data: allStudents } = await supabase.from('students').select('id').eq('year', year);
-        const { data: registeredStudents } = await supabase.from('registrations').select(`student_id, student:students!inner(year)`).eq('student.year', year);
+        const { data: registeredStudents } = await supabase.from('registrations').select(`student_id, student:students!inner(year)`).eq('student.year', year).neq('status', 'rejected');
 
         const registeredIds = new Set(registeredStudents?.map(r => r.student_id) || []);
         const unregisteredCount = (allStudents?.length || 0) - registeredIds.size;
@@ -128,6 +136,7 @@ export function CoordinatorDashboard() {
             myRegistrations: registrationsCount,
             pendingApprovals: pendingCount,
             unregisteredStudents: unregisteredCount > 0 ? unregisteredCount : 0,
+            rejectedRegistrations: rejectedCount || 0
         });
     };
 
@@ -269,7 +278,7 @@ export function CoordinatorDashboard() {
                         <p className="text-lg text-primary-foreground/80 font-medium">Total Year Registrations</p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-8 mt-auto relative z-10 border-t border-primary-foreground/20 pt-8">
+                    <div className="grid grid-cols-3 gap-8 mt-auto relative z-10 border-t border-primary-foreground/20 pt-8">
                         <div>
                             <p className="text-3xl font-bold text-primary-foreground">{stats.pendingApprovals}</p>
                             <p className="text-xs text-primary-foreground/60 font-semibold uppercase tracking-wider mt-1">Pending Review</p>
@@ -277,6 +286,10 @@ export function CoordinatorDashboard() {
                         <div>
                             <p className="text-3xl font-bold text-primary-foreground">{stats.unregisteredStudents}</p>
                             <p className="text-xs text-primary-foreground/60 font-semibold uppercase tracking-wider mt-1">Not Yet Registered</p>
+                        </div>
+                        <div>
+                            <p className="text-3xl font-bold text-primary-foreground">{stats.rejectedRegistrations}</p>
+                            <p className="text-xs text-primary-foreground/60 font-semibold uppercase tracking-wider mt-1">Rejected</p>
                         </div>
                     </div>
                 </Card>

@@ -33,6 +33,7 @@ interface Stats {
     totalRegistrations: number;
     pendingRegistrations: number;
     todayRegistrations: number;
+    rejectedRegistrations: number;
 }
 
 interface YearStat {
@@ -50,7 +51,8 @@ export function EventManagerDashboard() {
         activeEvents: 0,
         totalRegistrations: 0,
         pendingRegistrations: 0,
-        todayRegistrations: 0
+        todayRegistrations: 0,
+        rejectedRegistrations: 0
     });
     const [yearStats, setYearStats] = useState<YearStat[]>([]);
     const [recentActivity, setRecentActivity] = useState<any[]>([]);
@@ -94,14 +96,18 @@ export function EventManagerDashboard() {
                 supabase.from('students').select('*', { count: 'exact', head: true }),
                 supabase.from('events').select('*', { count: 'exact', head: true }),
                 supabase.from('events').select('*', { count: 'exact', head: true }).eq('is_active', true),
-                supabase.from('registrations').select('*', { count: 'exact', head: true }),
+                supabase.from('registrations').select('*', { count: 'exact', head: true }).neq('status', 'rejected'),
                 supabase.from('registrations').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
                 supabase.from('registrations')
                     .select('*', { count: 'exact', head: true })
-                    .gte('created_at', new Date().toISOString().split('T')[0]),
+                    .gte('created_at', new Date().toISOString().split('T')[0])
+                    .neq('status', 'rejected'),
                 supabase.from('events')
                     .select('*, registrations(count)')
-                    .eq('is_active', true)
+                    .eq('is_active', true),
+                supabase.from('registrations')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('status', 'rejected')
             ]);
 
             setStats({
@@ -110,7 +116,8 @@ export function EventManagerDashboard() {
                 activeEvents: activeEventsCount || 0,
                 totalRegistrations: registrationsCount || 0,
                 pendingRegistrations: pendingCount || 0,
-                todayRegistrations: todayCount || 0
+                todayRegistrations: todayCount || 0,
+                rejectedRegistrations: (await supabase.from('registrations').select('*', { count: 'exact', head: true }).eq('status', 'rejected')).count || 0
             });
 
             const processedEvents = (eventsData || []).map((event: any) => ({
@@ -160,7 +167,7 @@ export function EventManagerDashboard() {
         const yearData: YearStat[] = [];
         for (const year of years) {
             const { count: students } = await supabase.from('students').select('id', { count: 'exact' }).eq('year', year);
-            const { data: regs } = await supabase.from('registrations').select('id, student:students!inner(year)').eq('student.year', year);
+            const { data: regs } = await supabase.from('registrations').select('id, student:students!inner(year)').eq('student.year', year).neq('status', 'rejected');
             yearData.push({ year, students: students || 0, registrations: regs?.length || 0 });
         }
         setYearStats(yearData);
@@ -225,7 +232,7 @@ export function EventManagerDashboard() {
                         <p className="text-lg text-primary-foreground/80 font-medium">Total Registrations</p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-8 mt-auto relative z-10 border-t border-primary-foreground/20 pt-8">
+                    <div className="grid grid-cols-3 gap-8 mt-auto relative z-10 border-t border-primary-foreground/20 pt-8">
                         <div>
                             <p className="text-3xl font-bold text-primary-foreground">{stats.pendingRegistrations}</p>
                             <p className="text-xs text-primary-foreground/60 font-semibold uppercase tracking-wider mt-1">Pending Approval</p>
@@ -233,6 +240,10 @@ export function EventManagerDashboard() {
                         <div>
                             <p className="text-3xl font-bold text-primary-foreground">{stats.todayRegistrations}</p>
                             <p className="text-xs text-primary-foreground/60 font-semibold uppercase tracking-wider mt-1">New Today</p>
+                        </div>
+                        <div>
+                            <p className="text-3xl font-bold text-primary-foreground">{stats.rejectedRegistrations}</p>
+                            <p className="text-xs text-primary-foreground/60 font-semibold uppercase tracking-wider mt-1">Rejected</p>
                         </div>
                     </div>
                 </Card>
